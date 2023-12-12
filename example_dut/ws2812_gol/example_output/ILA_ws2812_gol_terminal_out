@@ -1,0 +1,1312 @@
+gatemate_ila\app> python3 ILAcop.py config -vhd C:\Users\df\gatemate_ila\example_DUT\ws2812_gol\src -t ws2812_gol
+
+################# ccf File ##################
+#                                           #
+# ws2812_gol.ccf                            #
+#                                           #
+#############################################
+
+
+################ vhdl Files #################
+#                                           #
+# aserial.vhd                               #
+# edge_detection.vhd                        #
+# gol_8x8_control.vhd                       #
+# gol_cell.vhd                              #
+# init_package.vhd                          #
+# ram.vhd                                   #
+# ram_to_bit.vhd                            #
+# receive_command.vhd                       #
+# spi_slave.vhd                             #
+# ws2812_gol.vhd                            #
+#                                           #
+#############################################
+
+Examine DUT ...
+
+
+################ RAM in use #################
+#                                           #
+# CC_BRAM_20K in use: 1                     #
+# CC_BRAM_40K in use: 0                     #
+#                                           #
+#############################################
+
+----- Ports DUT "ws2812_gol" ------
++---+--------+-------+------------+
+| # |  type  | range |    Name    |
++---+--------+-------+------------+
+| 0 | input  |   1   |    clk     |
+| 1 | input  |   1   |   i_mosi   |
+| 2 | input  |   1   |   i_sclk   |
+| 3 | input  |   1   |    i_ss    |
+| 4 | input  |   1   |   reset    |
+| 5 | output | [7:0] |    led     |
+| 6 | output |   1   |   o_miso   |
+| 7 | output |   1   | ws2812_out |
++---+--------+-------+------------+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                              !
+! Now you will be guided through the configuration of the ILA. !
+! Entering 'e' exits the process and generates a configurable  !
+! JSON file for the given DUT.                                 !
+! Enter 'p' for 'previous' to backtrack a step.                !
+!                                                              !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                    !
+! The clk-source is crucial, as they also serve as the ILA's source. !
+! The ILA gateware expects a frequency of 10 MHz by default.         !
+! If the frequency deviates, change the input frequency value        !
+! with the -f parameter when starting the program.                   !
+!                                                                    !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+############ CONFIGURATION NOTE #############
+#                                           #
+# clk source:    "clk"                      #
+#                                           #
+#############################################
+
+Do you want to change the clk source? (y:yes/N:no)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                !
+! The ILA can hold the DUT in reset until capture starts.        !
+! This makes it possible to capture the start process of the DUT !
+!                                                                !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+######################## Found external reset input ########################
+#                                                                          #
+# A potential external reset input signal has been identified,             #
+# which can be used to keep the DUT in reset mode via the ILA, if desired. #
+# Name of the signal: 'reset'                                              #
+#                                                                          #
+############################################################################
+
+Would you like to set a different input signal as a user-controllable reset? (y:yes/N:no)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                                 !
+! You will be prompted to select signals for analysis from those found in your design under test. !
+!                                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+--------------------------------- ws2812_gol ----------------------------------
++------+----------------------+---------+----------+--------------------------+
+|    # | name                 |  range  | selected | hierarchy                |
++------+----------------------+---------+----------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |    []    |                          |
+|    2 | byte_send            |  [7:0]  |    []    |                          |
+|    3 | clk                  |    1    |    []    |                          |
+...
+|   38 | gol_init             |    1    |    []    | \golx64.                 |
+|   39 | gol_next_gen         |    1    |    []    | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
+|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
++------+----------------------+---------+----------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 0 (max. 1180)                             #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 3
+
+--------------------------------- ws2812_gol ----------------------------------
++------+----------------------+---------+----------+--------------------------+
+|    # | name                 |  range  | selected | hierarchy                |
++------+----------------------+---------+----------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |    []    |                          |
+|    2 | byte_send            |  [7:0]  |    []    |                          |
+|    3 | clk                  |    1    |  ['A']   |                          |
+...
+|   38 | gol_init             |    1    |    []    | \golx64.                 |
+|   39 | gol_next_gen         |    1    |    []    | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
+|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
++------+----------------------+---------+----------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 1 (max. 1180)                             #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 38
+
+--------------------------------- ws2812_gol ----------------------------------
++------+----------------------+---------+----------+--------------------------+
+|    # | name                 |  range  | selected | hierarchy                |
++------+----------------------+---------+----------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |    []    |                          |
+|    2 | byte_send            |  [7:0]  |    []    |                          |
+|    3 | clk                  |    1    |  ['A']   |                          |
+...
+|   38 | gol_init             |    1    |  ['A']   | \golx64.                 |
+|   39 | gol_next_gen         |    1    |    []    | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
+|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
++------+----------------------+---------+----------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 2 (max. 1180)                             #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 39
+
+--------------------------------- ws2812_gol ----------------------------------
++------+----------------------+---------+----------+--------------------------+
+|    # | name                 |  range  | selected | hierarchy                |
++------+----------------------+---------+----------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |    []    |                          |
+|    2 | byte_send            |  [7:0]  |    []    |                          |
+|    3 | clk                  |    1    |  ['A']   |                          |
+...
+|   38 | gol_init             |    1    |  ['A']   | \golx64.                 |
+|   39 | gol_next_gen         |    1    |  ['A']   | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
+|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
++------+----------------------+---------+----------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 3 (max. 1180)                             #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 41
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [99:0] life_out: 88:81, 78:71, 68:61, 58:51, 48:41, 38:31, 28:21, 18:11
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |         []         | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |         []         | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 67 (max. 1180)                            #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 46
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [1:0] rgb_color:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |         []         | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 69 (max. 1180)                            #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 47
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [7:0] shift_life_row:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 77 (max. 1180)                            #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 59
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [7:0] ws2812_ram_addr_wr:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 85 (max. 1180)                            #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 62
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [7:0] ws2812_rgb_byte_reg:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 93 (max. 1180)                            #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 1166
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [7:0] shift_rgb_byte:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 101 (max. 1180)                           #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 1171
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                  !
+! Define a range for the vector to be analyzed.                                    !
+!  you can do this in the following ways:                                          !
+!   1) Press enter to analyze the entire vector                                    !
+!   2) Define an area of the vector. (The area should be within the vector area):  !
+!        e.g.: '[1:0]'                                                             !
+!   3) Individual signals:                                                         !
+!        e.g.: '1'                                                                 !
+!   4) Any combination of areas and individual signals                             !
+!        e.g.: '9, [7:5], 3, [1:0]'                                                !
+! define Signals in descending order!                                              !
+!                                                                                  !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+wire [7:0] ws2812_ram_addr_rd:
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |       ['A']        | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 109 (max. 1180)                           #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 1175
+
+-------------------------------------- ws2812_gol ---------------------------------------
++------+----------------------+---------+--------------------+--------------------------+
+|    # | name                 |  range  |      selected      | hierarchy                |
++------+----------------------+---------+--------------------+--------------------------+
+|    1 | byte_receive         |  [7:0]  |         []         |                          |
+|    2 | byte_send            |  [7:0]  |         []         |                          |
+|    3 | clk                  |    1    |       ['A']        |                          |
+...
+|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
+|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
+|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
+|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
+|      |                      |         |  '68:61', '58:51', |                          |
+|      |                      |         |  '48:41', '38:31', |                          |
+|      |                      |         |  '28:21', '18:11'] |                          |
+|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
+...
+|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
+|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
+...
+|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
+...
+| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
+...
+| 1171 | ws2812_ram_addr_rd   |  [7:0]  |       ['A']        | \ram_to_bit.             |
+...
+| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+...
+| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
+| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
++------+----------------------+---------+--------------------+--------------------------+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 110 (max. 1180)                           #
+#                                           #
+#############################################
+
+Which signals should be analyzed (0 = finish)? 0
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                !
+! The sampling frequency determines the rate at which signals are captured.      !
+! When choosing the frequency, consider:                                         !
+!  - At a minimum, twice the highest frequency of the DUT. (recommended: thrice) !
+!  - Harmonious with the frequency of the DUT (an integral multiple larger).     !
+! Recommended max. sampling frequency up to 160MHz.                              !
+!                                                                                !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Choose a sampling frequency (greater than 0, float, in MHz): 40
+
+!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!
+!                                           !
+! The capture duration must be defined.     !
+! The maximum duration depends on:          !
+!  - available ram                          !
+!  - width of the sample                    !
+!  - sampling frequency                     !
+!                                           !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Please choose one of the following durations:
++---+---------+---------------+
+| # | smp_cnt | duration [us] |
++---+---------+---------------+
+| 1 |       8 |           0.2 |
+| 2 |      24 |           0.6 |
+| 3 |      56 |           1.4 |
+| 4 |     120 |           3.0 |
+| 5 |     248 |           6.2 |
+| 6 |     504 |          12.6 |
+| 7 |    1016 |          25.4 |
+| 8 |    2040 |          51.0 |
+| 9 |    4088 |         102.2 |
++---+---------+---------------+
+
+Capture duration before trigger activation (choose between 1 and 9): 1
+
+####### Capture duration before Trigger #######
+#                                             #
+# Sample count = 8                            #
+# Capture duration = 0.2 us                   #
+#                                             #
+###############################################
+
+Please choose one of the following durations:
++----+---------+---------------+
+|  # | smp_cnt | duration [us] |
++----+---------+---------------+
+|  1 |       8 |           0.2 |
+|  2 |      24 |           0.6 |
+|  3 |      56 |           1.4 |
+|  4 |     120 |           3.0 |
+|  5 |     248 |           6.2 |
+|  6 |     504 |          12.6 |
+|  7 |    1016 |          25.4 |
+|  8 |    2040 |          51.0 |
+|  9 |    4088 |         102.2 |
+| 10 |    8184 |         204.6 |
++----+---------+---------------+
+
+Capture duration after trigger activation (choose between 1 and 10): 10
+
+####### Capture duration after Trigger ########
+#                                             #
+# Sample count = 8184                         #
+# Capture duration = 204.6 us                 #
+#                                             #
+###############################################
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                         !
+! There are two default triggers that can be set for exactly one signal:  !
+!  'rising edge' and 'falling edge'                                       !
+! There is also an optional trigger: pattern compare                      !
+! With this option, a pattern can be set across the entire bit width,     !
+!  determining for each bit whether it should be '1', '0', or 'dc'        !
+!  (don't care) to activate the trigger.                                  !
+! If this function is activated, more hardware is required for the ILA    !
+!  and the maximum possible sampling frequency may be reduced.            !
+!                                                                         !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Would you like me to implement the function for comparing bit patterns? (y/N): n
+
+###### Signals under test ######
+#                             #
+#  clk                        #
+#  gol_init                   #
+#  gol_next_gen               #
+#  [88:81] life_out           #
+#  [78:71] life_out           #
+#  [68:61] life_out           #
+#  [58:51] life_out           #
+#  [48:41] life_out           #
+#  [38:31] life_out           #
+#  [28:21] life_out           #
+#  [18:11] life_out           #
+#  [1:0] rgb_color            #
+#  [7:0] shift_life_row       #
+#  [7:0] ws2812_ram_addr_wr   #
+#  [7:0] ws2812_rgb_byte_reg  #
+#  [7:0] shift_rgb_byte       #
+#  [7:0] ws2812_ram_addr_rd   #
+#  data_out                   #
+#                             #
+###############################
+
+Execute Synthesis...
+Output permanently saved to: C:\Users\df\gatemate_ila/log/yosys.log
+
+Execute Implementation...
+Output permanently saved to: C:\Users\df\gatemate_ila/log/impl.log
+
+
+#################### Configuration File ####################
+#                                                          #
+# save_config/ila_config_ws2812_gol_23-12-02_17-23-46.json #
+#                                                          #
+############################################################
+
+Upload to FPGA Board...
+
+############ CONFIGURATION NOTE #############
+#                                           #
+# Trigger at sample no.: 8                  #
+# Defined analysis frequency: 40000000 Hz   #
+#                                           #
+#############################################
+
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|   9 |     \ram_to_bit.shift_rgb_byte[0] |
+|  10 |     \ram_to_bit.shift_rgb_byte[1] |
+|  11 |     \ram_to_bit.shift_rgb_byte[2] |
+|  12 |     \ram_to_bit.shift_rgb_byte[3] |
+|  13 |     \ram_to_bit.shift_rgb_byte[4] |
+|  14 |     \ram_to_bit.shift_rgb_byte[5] |
+|  15 |     \ram_to_bit.shift_rgb_byte[6] |
+|  16 |     \ram_to_bit.shift_rgb_byte[7] |
+|  17 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  25 |     \golx64.ws2812_ram_addr_wr[0] |
+|  26 |     \golx64.ws2812_ram_addr_wr[1] |
+|  27 |     \golx64.ws2812_ram_addr_wr[2] |
+|  28 |     \golx64.ws2812_ram_addr_wr[3] |
+|  29 |     \golx64.ws2812_ram_addr_wr[4] |
+|  30 |     \golx64.ws2812_ram_addr_wr[5] |
+|  31 |     \golx64.ws2812_ram_addr_wr[6] |
+|  32 |     \golx64.ws2812_ram_addr_wr[7] |
+|  33 |         \golx64.shift_life_row[0] |
+|  34 |         \golx64.shift_life_row[1] |
+|  35 |         \golx64.shift_life_row[2] |
+|  36 |         \golx64.shift_life_row[3] |
+|  37 |         \golx64.shift_life_row[4] |
+|  38 |         \golx64.shift_life_row[5] |
+|  39 |         \golx64.shift_life_row[6] |
+|  40 |         \golx64.shift_life_row[7] |
+|  41 |              \golx64.rgb_color[0] |
+|  42 |              \golx64.rgb_color[1] |
+|  43 |         \golx64.life_out_18_11[0] |
+|  44 |         \golx64.life_out_18_11[1] |
+|  45 |         \golx64.life_out_18_11[2] |
+|  46 |         \golx64.life_out_18_11[3] |
+|  47 |         \golx64.life_out_18_11[4] |
+|  48 |         \golx64.life_out_18_11[5] |
+|  49 |         \golx64.life_out_18_11[6] |
+|  50 |         \golx64.life_out_18_11[7] |
+|  51 |         \golx64.life_out_28_21[0] |
+|  52 |         \golx64.life_out_28_21[1] |
+|  53 |         \golx64.life_out_28_21[2] |
+|  54 |         \golx64.life_out_28_21[3] |
+|  55 |         \golx64.life_out_28_21[4] |
+|  56 |         \golx64.life_out_28_21[5] |
+|  57 |         \golx64.life_out_28_21[6] |
+|  58 |         \golx64.life_out_28_21[7] |
+|  59 |         \golx64.life_out_38_31[0] |
+|  60 |         \golx64.life_out_38_31[1] |
+|  61 |         \golx64.life_out_38_31[2] |
+|  62 |         \golx64.life_out_38_31[3] |
+|  63 |         \golx64.life_out_38_31[4] |
+|  64 |         \golx64.life_out_38_31[5] |
+|  65 |         \golx64.life_out_38_31[6] |
+|  66 |         \golx64.life_out_38_31[7] |
+|  67 |         \golx64.life_out_48_41[0] |
+|  68 |         \golx64.life_out_48_41[1] |
+|  69 |         \golx64.life_out_48_41[2] |
+|  70 |         \golx64.life_out_48_41[3] |
+|  71 |         \golx64.life_out_48_41[4] |
+|  72 |         \golx64.life_out_48_41[5] |
+|  73 |         \golx64.life_out_48_41[6] |
+|  74 |         \golx64.life_out_48_41[7] |
+|  75 |         \golx64.life_out_58_51[0] |
+|  76 |         \golx64.life_out_58_51[1] |
+|  77 |         \golx64.life_out_58_51[2] |
+|  78 |         \golx64.life_out_58_51[3] |
+|  79 |         \golx64.life_out_58_51[4] |
+|  80 |         \golx64.life_out_58_51[5] |
+|  81 |         \golx64.life_out_58_51[6] |
+|  82 |         \golx64.life_out_58_51[7] |
+|  83 |         \golx64.life_out_68_61[0] |
+|  84 |         \golx64.life_out_68_61[1] |
+|  85 |         \golx64.life_out_68_61[2] |
+|  86 |         \golx64.life_out_68_61[3] |
+|  87 |         \golx64.life_out_68_61[4] |
+|  88 |         \golx64.life_out_68_61[5] |
+|  89 |         \golx64.life_out_68_61[6] |
+|  90 |         \golx64.life_out_68_61[7] |
+|  91 |         \golx64.life_out_78_71[0] |
+|  92 |         \golx64.life_out_78_71[1] |
+|  93 |         \golx64.life_out_78_71[2] |
+|  94 |         \golx64.life_out_78_71[3] |
+|  95 |         \golx64.life_out_78_71[4] |
+|  96 |         \golx64.life_out_78_71[5] |
+|  97 |         \golx64.life_out_78_71[6] |
+|  98 |         \golx64.life_out_78_71[7] |
+|  99 |         \golx64.life_out_88_81[0] |
+| 100 |         \golx64.life_out_88_81[1] |
+| 101 |         \golx64.life_out_88_81[2] |
+| 102 |         \golx64.life_out_88_81[3] |
+| 103 |         \golx64.life_out_88_81[4] |
+| 104 |         \golx64.life_out_88_81[5] |
+| 105 |         \golx64.life_out_88_81[6] |
+| 106 |         \golx64.life_out_88_81[7] |
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+
+########### current ILA runtime configuration ##########
+#                                                      #
+# Number of iterations: 1                              #
+#   Iteration Number: 1                                #
+#     trigger activation: falling edge                 #
+#     trigger signal:     \ram_to_bit.aserial.data_out #
+#                                                      #
+########################################################
+
+0 -- exit
+1 -- change Trigger
+2 -- start capture
+3 -- reset ILA (resets the config of the ILA)
+4 -- reset DUT (hold the DUT in reset until the capture starts)
+
+Enter your choice: 1
+
+################### Trigger configuration ##################
+#                                                          #
+# Select how many triggers are set directly in succession. #
+# For each iteration you can select a separate trigger.    #
+# Entering 'e' exits the process                           #
+# Enter 'p' for 'previous' to backtrack a step.            #
+#                                                          #
+############################################################
+
+
+Number of sequences (int, > 0): 6
+
+###  sequence nr. 1: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 108
+
+###  sequence nr. 2: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 107
+
+###  sequence nr. 3: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 107
+
+###  sequence nr. 4: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 107
+
+###  sequence nr. 5: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 107
+
+###  sequence nr. 6: ###
+
+All possible Trigger activations:
+0:      falling edge
+1:      rising edge
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+Trigger signal? in range [0-109]: 107
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+
+####### current ILA runtime configuration ######
+#                                              #
+# Number of sequences: 6                       #
+#                                              #
+#  Sequences Number: 1                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_init     #
+#  Sequences Number: 2                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#  Sequences Number: 3                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#  Sequences Number: 4                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#  Sequences Number: 5                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#  Sequences Number: 6                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+################################################
+
+
+
+0 -- exit
+1 -- change Trigger
+2 -- start capture
+3 -- reset ILA (resets the config of the ILA)
+4 -- reset DUT (hold the DUT in reset until the capture starts)
+
+Enter your choice: 4
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+
+####### current ILA runtime configuration ######
+#                                              #
+# Number of sequences: 6                       #
+#                                              #
+#  Sequences Number: 1                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_init     #
+#                                              #
+#  Sequences Number: 2                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 3                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 4                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 5                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 6                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+################################################
+
+0 -- exit
+1 -- change Trigger
+2 -- start capture
+3 -- reset ILA (resets the config of the ILA)
+4 -- reset DUT (hold the DUT in reset until the capture starts)
+
+Enter your choice: 2
+
+################# start Capture #################
+#                                               #
+# Waiting for device. Press Enter to interrupt. #
+#                                               #
+#################################################
+
+
+####################Duration between captures####################
+#                                                               #
+# Duration between start and first trigger: 0.000338 s          #
+# Duration until the next triggering of the trigger: 0.936452 s #
+# Duration until the next triggering of the trigger: 0.936448 s #
+# Duration until the next triggering of the trigger: 0.9364 s   #
+# Duration until the next triggering of the trigger: 0.936403 s #
+# Duration until the next triggering of the trigger: 0.936377 s #
+#                                                               #
+#################################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_0.vcd #
+#                                                  #
+####################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_1.vcd #
+#                                                  #
+####################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_2.vcd #
+#                                                  #
+####################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_3.vcd #
+#                                                  #
+####################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_4.vcd #
+#                                                  #
+####################################################
+
+
+################## create vcd file #################
+#                                                  #
+# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_5.vcd #
+#                                                  #
+####################################################
+
+
+Press Enter to continue
+
+Trigger activation? in range [0-1]: 1
+--------------- All Signals ---------------
++-----+-----------------------------------+
+|   # |                Name               |
++-----+-----------------------------------+
+|   0 |      \ram_to_bit.aserial.data_out |
+|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+...
+| 107 |              \golx64.gol_next_gen |
+| 108 |                  \golx64.gol_init |
+| 109 |                               clk |
++-----+-----------------------------------+
+
+####### current ILA runtime configuration ######
+#                                              #
+# Number of sequences: 6                       #
+#                                              #
+#  Sequences Number: 1                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_init     #
+#                                              #
+#  Sequences Number: 2                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 3                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 4                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 5                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+#  Sequences Number: 6                         #
+#     trigger activation: rising edge          #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
+################################################
+
+0 -- exit
+1 -- change Trigger
+2 -- start capture
+3 -- reset ILA (resets the config of the ILA)
+4 -- reset DUT (hold the DUT in reset until the capture starts)
+
+Enter your choice:
