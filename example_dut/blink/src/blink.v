@@ -3,7 +3,7 @@
 module blink(
 		input wire clk,
 		input wire rst,
-		//output [19:0] ila_sample_dut,
+		//output [9:0] ila_sample_dut,
 		output wire led
 	);
 
@@ -36,6 +36,6 @@ module blink(
 		end
 	end
 
- //assign ila_sample_dut = counter[19:0];
+ //assign ila_sample_dut = {counter[7:0], clk, clk};
 
 endmodule

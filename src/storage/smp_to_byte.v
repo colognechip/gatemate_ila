@@ -79,6 +79,17 @@ always @(posedge i_clk_ILA) begin
     end
 end
 assign o_rd = rd;
-assign o_send_byte = shift_reg[7:0];
+
+reg [7:0] o_send;
+
+always @(posedge i_clk_ILA) begin
+    if (!i_read_active) begin
+        o_send <= 0;
+    end else begin
+        o_send <= shift_reg[7:0];
+    end
+end
+
+assign o_send_byte = o_send;
 
 endmodule

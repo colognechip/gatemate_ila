@@ -205,7 +205,7 @@ generate
     end
     else begin
         reg [7:0] send_byte_sync;
-        parameter rest_send_byte = 8 - sample_width;
+        localparam rest_send_byte = 8 - sample_width;
         always  @(posedge i_clk_ILA) begin
             if (!i_reset) begin 
                 send_byte_sync <= 0;

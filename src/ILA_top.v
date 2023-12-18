@@ -24,14 +24,14 @@
 */
 
 module ila_top#(
-    parameter USE_FEATURE_PATTERN = 0,
+    parameter USE_FEATURE_PATTERN = 1,
     parameter samples_count_before_trigger = 4096,
     parameter bits_samples_count_before_trigger = 11,
     parameter bits_samples_count = 12,
-    parameter sample_width = 8,
+    parameter sample_width = 27,
     parameter external_clk_freq = "10.0",
     parameter sampling_freq_MHz = "160",
-    parameter BRAM_matrix_wide = 2,
+    parameter BRAM_matrix_wide = 6,
     parameter BRAM_matrix_deep = 1,
     parameter BRAM_single_wide = 5,
     parameter BRAM_single_deep = 13,
@@ -44,7 +44,6 @@ module ila_top#(
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~Signals~start__
-
 
 // __Place~for~Signals~ends__
 // #################################################################################################
@@ -63,7 +62,6 @@ wire reset_DUT;
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
-
 
 
 // __Place~for~SUT~ends__

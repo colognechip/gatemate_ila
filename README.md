@@ -6,7 +6,7 @@ With the ILA, you can perform in-system debugging of your designs on the GateMat
 - Simultaneously analyze over 1000 bits from all signals in your Device Under Test (DUT).
 - A simple, interactive, self-explanatory shell that will guide you through the configuration process of the ILA.
 - Analyze signals from your design directly within the FPGA in a waveform format, similar to simulations, using the original names and vector sizes from your design.
-- Set up a custom bit pattern across the entire range of all signals you wish to analyze as a trigger, using '1', '0', and 'DC'.
+- Configure a custom bit pattern as a trigger across the full range of signals you wish to analyze, utilizing '1' for high, '0' for low, and 'DC' (Don't Care) for any bit, to precisely target specific conditions or scenarios.
 - Utilize the maximum available RAM to extend capture time.
 - Set a specific duration time before and after triggering to capture the statistics of your signals within the time frame of interest.
 -	Control the reset state of your DUT from the ILA in real-time, enabling you to initiate a capture right from the startup of the DUT.

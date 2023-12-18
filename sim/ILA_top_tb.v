@@ -67,14 +67,14 @@ module ila_top_tb;
 // #################################################################################################
     // ILA configuration
 
-  parameter bits_samples_count = 9;
+  parameter bits_samples_count = 12;
   parameter sampling_freq_MHz = "80.0";
   parameter samples_count = 2**(bits_samples_count+1);
   parameter sample_width = 10;
   parameter PK_PER_DATA = ((sample_width-1)/8)+1;
   parameter all_bytes = PK_PER_DATA*samples_count;
   parameter send_pattern_true = 1;
-  parameter BRAM_matrix_wide = 1;
+  parameter BRAM_matrix_wide = 2;
   parameter BRAM_matrix_deep = 1;
   reg clk_ILA, spi_clk, reset_r;
   wire ss_r, miso_r, mosi_r;
@@ -513,16 +513,16 @@ integer idx;
     $dumpvars(0,ila_top_tb);
     //`ifdef sim
     for (idx = 0; idx < BRAM_matrix_deep; idx = idx + 1) begin
-      $dumpvars(0,UUT.BRA.BRAM_do_tmp[idx]);
+      $dumpvars(0,UUT.mem_control.BRAM_do_tmp[idx]);
     end
     for (idx = 0; idx < BRAM_matrix_wide; idx = idx + 1) begin
-      $dumpvars(1,UUT.BRA.data_in_pipe[idx]);
+      $dumpvars(1,UUT.mem_control.data_in_pipe[idx]);
     end
       
     //`endif
  end
  initial begin
-    #800000000;
+    #80000000;
     $finish;
 end
 
