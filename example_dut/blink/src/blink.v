@@ -3,7 +3,7 @@
 module blink(
 		input wire clk,
 		input wire rst,
-		//output [9:0] ila_sample_dut,
+		//output [19:0] ila_sample_dut,
 		output wire led
 	);
 
@@ -14,7 +14,7 @@ module blink(
 
 	CC_PLL #(
 		.REF_CLK("10.0"),    // reference input in MHz
-		.OUT_CLK("20.0"),   // pll output frequency in MHz
+		.OUT_CLK("40.0"),   // pll output frequency in MHz
 		.PERF_MD("ECONOMY"), // LOWPOWER, ECONOMY, SPEED
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant
@@ -36,6 +36,6 @@ module blink(
 		end
 	end
 
- //assign ila_sample_dut = {counter[26:22], 1'b0, 1'b0, 1'b0, 1'b0, clk};
+ //assign ila_sample_dut = counter[19:0];
 
 endmodule

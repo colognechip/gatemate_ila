@@ -25,16 +25,16 @@
 
 module ila_top#(
     parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 512,
-    parameter bits_samples_count_before_trigger = 8,
-    parameter bits_samples_count = 9,
-    parameter sample_width = 65,
+    parameter samples_count_before_trigger = 4096,
+    parameter bits_samples_count_before_trigger = 11,
+    parameter bits_samples_count = 12,
+    parameter sample_width = 8,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "40",
-    parameter BRAM_matrix_wide = 4,
+    parameter sampling_freq_MHz = "160",
+    parameter BRAM_matrix_wide = 2,
     parameter BRAM_matrix_deep = 1,
-    parameter BRAM_single_wide = 20,
-    parameter BRAM_single_deep = 10,
+    parameter BRAM_single_wide = 5,
+    parameter BRAM_single_deep = 13,
     parameter clk_delay = 2
 )(
     input i_clk,
@@ -43,14 +43,9 @@ module ila_top#(
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~Signals~start__
-input i_mosi,
-input i_sclk,
-input i_ss,
-input reset,
-output [7:0] led,
-output o_miso,
-output ws2812_out,
+// __Place~for~Signals~start__
+
+
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -67,10 +62,10 @@ reg hold_reset;
 wire reset_DUT;
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~SUT~start__
-wire reset_DUT_port;
-assign reset_DUT_port = (reset_DUT & reset);
-ws2812_gol DUT ( .clk(i_clk), .reset(reset_DUT_port), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
+// __Place~for~SUT~start__
+
+
+
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
@@ -84,7 +79,7 @@ CC_PLL #(
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant
 		.CP_FILTER_CONST(4)  // optional CP filter constant
-	) pll_inst_1 (
+	) pll_inst_ila (
 		.CLK_REF(i_clk), .CLK_FEEDBACK(1'b0), .USR_CLK_REF(1'b0),
 		.USR_LOCKED_STDY_RST(1'b0), .USR_PLL_LOCKED_STDY(usr_pll_lock_stdy_1), .USR_PLL_LOCKED(usr_pll_lock_1),
 		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out_1)
@@ -129,7 +124,7 @@ wire [7:0] spi_byte_send, spi_byte_receive;
 wire config_ILA;
 wire s_s_rec_byte_ready;
 wire spi_echo;
-spi_slave s_s (.i_sclk(i_sclk_ILA), 
+spi_slave spi_passiv (.i_sclk(i_sclk_ILA), 
                 .i_ss(i_ss_ILA), 
                 .i_echo(spi_echo), 
                 .i_mosi(i_mosi_ILA), 
@@ -536,7 +531,7 @@ bram_control #(.samples_count_before_trigger(samples_count_before_trigger),
             .BRAM_matrix_wide(BRAM_matrix_wide),
             .BRAM_matrix_deep(BRAM_matrix_deep),
             .BRAM_single_wide(BRAM_single_wide),
-            .BRAM_single_deep(BRAM_single_deep)) BRA (.i_clk_ILA(i_clk_ILA), 
+            .BRAM_single_deep(BRAM_single_deep)) mem_control (.i_clk_ILA(i_clk_ILA), 
             .i_reset(trigger_active_hold),
             .i_read_active(read_active),  
             .i_sample(sample), 

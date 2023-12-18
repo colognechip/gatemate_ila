@@ -204,7 +204,17 @@ generate
                                                         .o_send_byte(o_send_byte), .o_rd(rd_nxt));
     end
     else begin
-        assign o_send_byte = RAM_smp_out;
+        reg [7:0] send_byte_sync;
+        parameter rest_send_byte = 8 - sample_width;
+        always  @(posedge i_clk_ILA) begin
+            if (!i_reset) begin 
+                send_byte_sync <= 0;
+            end
+            else begin
+                send_byte_sync <= {{rest_send_byte{1'b0}}, RAM_smp_out};
+            end
+        end
+        assign o_send_byte = send_byte_sync;
         assign rd_nxt = i_slave_end_byte_nedge_edge;
     end
 endgenerate

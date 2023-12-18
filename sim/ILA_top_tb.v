@@ -67,15 +67,15 @@ module ila_top_tb;
 // #################################################################################################
     // ILA configuration
 
-  parameter bits_samples_count = 15;
+  parameter bits_samples_count = 9;
   parameter sampling_freq_MHz = "80.0";
   parameter samples_count = 2**(bits_samples_count+1);
   parameter sample_width = 10;
   parameter PK_PER_DATA = ((sample_width-1)/8)+1;
   parameter all_bytes = PK_PER_DATA*samples_count;
   parameter send_pattern_true = 1;
-  parameter BRAM_matrix_wide = 2;
-  parameter BRAM_matrix_deep = 8;
+  parameter BRAM_matrix_wide = 1;
+  parameter BRAM_matrix_deep = 1;
   reg clk_ILA, spi_clk, reset_r;
   wire ss_r, miso_r, mosi_r;
   wire rst_sig = 1;
