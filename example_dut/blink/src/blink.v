@@ -2,7 +2,7 @@
 
 module blink(
 		input wire clk,
-		input wire rst,
+		//input wire rst,
 		//output [9:0] ila_sample_dut,
 		output wire led
 	);
@@ -11,10 +11,14 @@ module blink(
 
 	wire clk270, clk180, clk90, clk0, usr_ref_out;
 	wire usr_pll_lock_stdy, usr_pll_lock;
+	wire rst;
+	CC_USR_RSTN usr_rstn_inst (
+   	.USR_RSTN(rst) // reset signal to CPE array
+);
 
 	CC_PLL #(
 		.REF_CLK("10.0"),    // reference input in MHz
-		.OUT_CLK("40.0"),   // pll output frequency in MHz
+		.OUT_CLK("20.0"),   // pll output frequency in MHz
 		.PERF_MD("ECONOMY"), // LOWPOWER, ECONOMY, SPEED
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant

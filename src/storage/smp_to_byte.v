@@ -30,7 +30,7 @@ module smp_to_byte#(
     input i_clk_ILA,
     input i_read_active,
     input [(sample_width-1):0] i_ram_sample,
-    input i_slave_end_byte_nedge_edge,
+    input i_slave_end_byte_post_edge,
     output [7:0] o_send_byte,
     output o_rd
 );
@@ -50,7 +50,7 @@ always @(posedge i_clk_ILA) begin
     if (init_reg | (!i_read_active)) begin               
         shift_reg <= {{zero_padding_bits{1'b0}}, i_ram_sample};
     end
-    else if (i_slave_end_byte_nedge_edge) begin
+    else if (i_slave_end_byte_post_edge) begin
         shift_reg <= {8'b00000000, shift_reg[((packages_per_sample*8)-1):8]};
     end
 end
@@ -60,7 +60,7 @@ always @(posedge i_clk_ILA) begin
     if (!i_read_active) begin
         shift_counter <= 0;
     end
-    else if (i_slave_end_byte_nedge_edge) begin
+    else if (i_slave_end_byte_post_edge) begin
         if (init_reg) begin
             shift_counter <= 0;
         end
@@ -70,7 +70,7 @@ always @(posedge i_clk_ILA) begin
     end
 end
 reg rd;
-assign init_reg = (shift_counter == (packages_per_sample-1) & i_slave_end_byte_nedge_edge);
+assign init_reg = (shift_counter == (packages_per_sample-1) & i_slave_end_byte_post_edge);
 always @(posedge i_clk_ILA) begin
     if (!i_read_active) begin
         rd <= 0;

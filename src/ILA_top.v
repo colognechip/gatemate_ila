@@ -24,14 +24,14 @@
 */
 
 module ila_top#(
-    parameter USE_FEATURE_PATTERN = 1,
-    parameter samples_count_before_trigger = 4096,
-    parameter bits_samples_count_before_trigger = 11,
+    parameter USE_FEATURE_PATTERN = 0,
+    parameter samples_count_before_trigger = 32,
+    parameter bits_samples_count_before_trigger = 4,
     parameter bits_samples_count = 12,
-    parameter sample_width = 27,
+    parameter sample_width = 106,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "160",
-    parameter BRAM_matrix_wide = 6,
+    parameter sampling_freq_MHz = "20",
+    parameter BRAM_matrix_wide = 22,
     parameter BRAM_matrix_deep = 1,
     parameter BRAM_single_wide = 5,
     parameter BRAM_single_deep = 13,
@@ -43,8 +43,14 @@ module ila_top#(
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~Signals~start__
-
+// __Place~for~Signals~start__
+input i_mosi,
+input i_sclk,
+input i_ss,
+input reset,
+output [7:0] led,
+output o_miso,
+output ws2812_out,
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -61,9 +67,10 @@ reg hold_reset;
 wire reset_DUT;
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~SUT~start__
-
-
+// __Place~for~SUT~start__
+wire reset_DUT_port;
+assign reset_DUT_port = (reset_DUT & reset);
+ws2812_gol DUT ( .clk(i_clk), .reset(reset_DUT_port), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
@@ -533,7 +540,7 @@ bram_control #(.samples_count_before_trigger(samples_count_before_trigger),
             .i_reset(trigger_active_hold),
             .i_read_active(read_active),  
             .i_sample(sample), 
-            .i_slave_end_byte_nedge_edge(slave_rec_byte_ready_post_edge), 
+            .i_slave_end_byte_post_edge(slave_rec_byte_ready_post_edge), 
             .i_trigger_triggered(trigger_triggered), 
             .o_send_byte(spi_data_send),
             .o_write_done(write_done),

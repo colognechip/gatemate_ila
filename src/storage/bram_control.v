@@ -38,7 +38,7 @@ module bram_control#(
     input i_reset,
     input i_read_active,
     input [(sample_width-1):0] i_sample,
-    input i_slave_end_byte_nedge_edge,
+    input i_slave_end_byte_post_edge,
     input i_trigger_triggered,
     output [7:0] o_send_byte,
     output o_write_done,
@@ -200,7 +200,7 @@ generate
     if (sample_width > 8) begin 
         smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_clk_ILA), .i_read_active(i_read_active), 
                                                         .i_ram_sample(RAM_smp_out),
-                                                        .i_slave_end_byte_nedge_edge(i_slave_end_byte_nedge_edge),
+                                                        .i_slave_end_byte_post_edge(i_slave_end_byte_post_edge),
                                                         .o_send_byte(o_send_byte), .o_rd(rd_nxt));
     end
     else begin
@@ -215,7 +215,7 @@ generate
             end
         end
         assign o_send_byte = send_byte_sync;
-        assign rd_nxt = i_slave_end_byte_nedge_edge;
+        assign rd_nxt = i_slave_end_byte_post_edge;
     end
 endgenerate
 

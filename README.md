@@ -206,6 +206,8 @@ When customising the call, please note that the software places the vcd file in 
 
 ## Basic ILA setup
 
+### Access to external software
+
 The ILAcop has to execute the toolchain applications and GTKWave. 
 
 If you haven't already done so, install the GateMate FPGA toolchain to transfer your design to the GateMate FPGA. You can follow the [Toolchain Installation User Guide.](https://www.colognechip.com/docs/ug1002-toolchain-install-latest.pdf)
@@ -278,7 +280,6 @@ This should set the permissions for your USB-Serial device, allowing your Python
   
 
 
-
 ## Hardware setup
 
 The software for the configuration of the GateMate FPGA, as well as the respective programming mode, can be customised in `app/config.py` under the following constants:
@@ -347,6 +348,15 @@ PR_FLAGS = '-cCP +uCIO' # The removal of the +uCIO flag is not permissible. The 
 The command `+uCIO` switches the configuration GPIO bank of the FPGAS so that these can be used as normal user IOs. This is necessary for the ILA to be able to communicate via the same connection as it was configured.
 
 If you have selected other IOs for the SPI communication of the ILA gateware, the '+uCIO' flag can also be omitted.
+
+If you want to change the SPI frequency for the communication of the ILA, you need to modify the following line in the `app/config.py` file:
+<pre>
+freq_max = 10000000   
+</pre>
+
+
+
+
 ## ILA functionality
 
 ### Trigger condition

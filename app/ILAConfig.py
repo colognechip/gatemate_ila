@@ -459,14 +459,17 @@ class ILAConfig:
 
     def get_SUT_Signals(self, choose=True, create = False):
         code_lines = []
-        replacement_string = ", ila_sample_dut);"
+        module_instance = "module " + self.SUT_top_name + "("
+        replacement_string = module_instance + "ila_sample_dut, "
         count_lines = 0
         insert_output_idx = 0
+        insert_output_mod = 0
         last_line = 0
         in_funktion = False
         ignore_line = False
         import_mem = False
         delete_last = False
+        find_module_end = True
         signal_nr = 0
         if len(self.found_init_mem) > 0 and create:
             pattern = re.compile(r'\(\*\s*src\s*=\s*"(.*?)"\s*\*\)')
@@ -529,7 +532,14 @@ class ILAConfig:
                     if "endfunction" in line:
                         in_funktion = False
                     if not in_funktion:
-                        if line.startswith("module " + self.SUT_top_name + "("):
+                        if line.startswith(module_instance):
+                            insert_output_mod = count_lines
+                            if ");" in line:
+                                insert_output_idx = count_lines + 1
+                            else:
+                                find_module_end = False
+                        elif (not find_module_end) and (");" in line):
+                            find_module_end = True
                             insert_output_idx = count_lines + 1
                         elif "endmodule" in line:
                             last_line = count_lines
@@ -546,9 +556,9 @@ class ILAConfig:
                     count_lines += 1
                     code_lines.append(line)
         if self.found_cc_rst:
-            code_lines[insert_output_idx-1] = code_lines[insert_output_idx-1].replace(");", ", ILA_rst"+replacement_string)
+            code_lines[insert_output_mod] = code_lines[insert_output_mod].replace(module_instance, replacement_string + "ILA_rst, ")
         else:
-            code_lines[insert_output_idx - 1] = code_lines[insert_output_idx - 1].replace(");", replacement_string)
+            code_lines[insert_output_mod] = code_lines[insert_output_mod].replace(module_instance, replacement_string)
 
         self.SUT_signals = sorted(self.SUT_signals, key=sort_key)
         return code_lines, last_line, insert_output_idx
@@ -1135,7 +1145,7 @@ class ILAConfig:
             instance_of_dut = "wire reset_DUT_port;"+os.linesep+"assign reset_DUT_port = (reset_DUT & " + self.reset_name + ");" + os.linesep \
                               + instance_of_dut + "." + self.reset_name + "(reset_DUT_port), "
         elif self.found_cc_rst:
-            instance_of_dut = instance_of_dut + ", .ILA_rst(reset_DUT), .ila_sample_dut(sample));"
+            instance_of_dut = instance_of_dut + ".ILA_rst(reset_DUT), "
         insert_str = os.linesep
         for single_signal in self.ports_DUT:
             if self.reset_name and  self.reset_name == single_signal["Signal_name"]:

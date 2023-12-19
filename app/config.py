@@ -33,7 +33,7 @@ REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
 CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm',  freely customisable mode = 'cust', without leveshifter 'free'
 CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1',
 available_BRAM = 60
-freq_max = 10000000     # maximum frequency for spi communication to the ILA on the FPGA
+freq_max = 20000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
 cust_gpio_direction_pins = 0x17F0
 cust_gpio_direction = 0x1710
 cust_gpio_write = 0x0210
