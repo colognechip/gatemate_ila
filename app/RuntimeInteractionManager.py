@@ -439,8 +439,8 @@ class RuntimeInteractionManager:
                 counter_var = writer.register_var('ILA_Signals', 'smp_cnt_ILA', 'integer',
                                                       size=(self.count_samples_total.bit_length() + 1))
                 samples = np.reshape(byte_arr, (self.count_samples_total, self.bytes_per_sample))
-                samples = np.roll(samples, -3, axis=0)
-                samples = samples[:-3]
+                #samples = np.roll(samples, -3, axis=0)
+                #samples = samples[:-3]
                 for sample_counter in range(len(samples)):  # go through all samples
                     bit_counter = 0
                     for signal_name_index in range(len(self.signal_names)):  # go through all defined signals and vectors

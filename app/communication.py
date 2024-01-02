@@ -147,7 +147,7 @@ class Communication:
         print(print_note(["Waiting for device. Press Enter to interrupt."],
                          " start Capture "))
         answer_all = []
-        count_bytes_all = self.count_bytes +1
+        count_bytes_all = self.count_bytes +2
         paket_size = int(count_bytes_all / self.max_payload)
         paket_rest = count_bytes_all % self.max_payload
         times_mess = []
@@ -167,7 +167,7 @@ class Communication:
                     answer = self.port.exchange(bytearray([170]), paket_rest)
                     for read_package in range(paket_size):
                         answer = answer + self.port.read(self.max_payload)
-                    answer_all.append(answer)
+                    answer_all.append(answer[1:])
                     self.send_reset_ila()
                     break
                 elif not t.is_alive():

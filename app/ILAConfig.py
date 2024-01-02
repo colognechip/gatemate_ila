@@ -706,9 +706,8 @@ class ILAConfig:
 
     def choose_sampling_frequency(self):
         print(print_note(["The sampling frequency determines the rate at which signals are captured.",
-                           "When choosing the frequency, consider:",
-                           " - At a minimum, twice the highest frequency of the DUT. (recommended: thrice)",
-                           " - Harmonious with the frequency of the DUT (an integral multiple larger).",
+                           "When selecting the frequency, ensure it is harmonious with the DUT's frequency,",
+                            " either matching or an integral multiple.",
                            "Recommended max. sampling frequency up to 160MHz.",
                            ],
                           " Note ", '!'))

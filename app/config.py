@@ -25,7 +25,7 @@
 YOSYS = 'yosys'
 YOSYS_FLAGS = '-nomx8'
 PR = 'p_r'
-PR_FLAGS = '-cCP +uCIO' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
+PR_FLAGS = ' -cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
 UPLOAD = 'openFPGALoader'
 UPLOAD_FLAGS = ' -b gatemate_evb_jtag '
 REPRESENTATION_SOFTWARE = ['gtkwave']

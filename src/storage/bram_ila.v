@@ -5,6 +5,7 @@ module bram_ila #(
     )(
     input wire we,
     input wire clk,
+    input wire rclk,
     input wire [DATA_WIDTH-1:0] di,
     input wire [ADDR_WIDTH-1:0] addr_read,
     input wire [ADDR_WIDTH-1:0] addr_write,
@@ -24,7 +25,7 @@ module bram_ila #(
     
 
     end
-    always @(posedge clk) begin
+    always @(posedge rclk) begin
 
             do <= memory[addr_read];
     end

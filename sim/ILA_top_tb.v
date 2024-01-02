@@ -53,7 +53,7 @@ module CC_PLL #(
   initial
     begin
       USR_RSTN <= 0;
-      #200;
+      #2000;
       USR_RSTN <= 1;
     end
 endmodule
@@ -67,14 +67,14 @@ module ila_top_tb;
 // #################################################################################################
     // ILA configuration
 
-  parameter bits_samples_count = 12;
+  parameter bits_samples_count = 10;
   parameter sampling_freq_MHz = "80.0";
   parameter samples_count = 2**(bits_samples_count+1);
-  parameter sample_width = 10;
+  parameter sample_width = 25;
   parameter PK_PER_DATA = ((sample_width-1)/8)+1;
   parameter all_bytes = PK_PER_DATA*samples_count;
   parameter send_pattern_true = 1;
-  parameter BRAM_matrix_wide = 2;
+  parameter BRAM_matrix_wide = 3;
   parameter BRAM_matrix_deep = 1;
   reg clk_ILA, spi_clk, reset_r;
   wire ss_r, miso_r, mosi_r;
@@ -96,8 +96,7 @@ module ila_top_tb;
 // #################################################################################################
 // # ********************************************************************************************* #
     // Input and output ports of the SUT 
-        .led(led_w),
-        .rst(rst_sig)
+        .led(led_w)
 // #################################################################################################        
         );
 
@@ -188,14 +187,14 @@ reg cnt_end_save;
 reg [11:0] trigger_data = 12'b000011000001;
 reg [3:0] trigger_activation = 4'b0010;
 
-
+reg start_new;
 
 parameter bytes_to_send = ((sample_width-1)/4)+1;
 
 parameter rest = ((bytes_to_send*4)-sample_width);
 
-reg [(bytes_to_send*4)-1:0] bit_pattern = {{rest{1'b0}} ,10'b0101011111};
-reg [(bytes_to_send*4)-1:0] bit_maske =   {{rest{1'b0}}, 10'b0000011111};
+reg [(bytes_to_send*4)-1:0] bit_pattern = {{rest{1'b1}} ,25'b1111111111111111111111111};
+reg [(bytes_to_send*4)-1:0] bit_maske =   {{rest{1'b1}}, 25'b1111111111111110000000000};
 
 
 
@@ -244,7 +243,7 @@ integer count_shift_pattern = 0;
           send_pattern_data : begin
             byte_to_send <= {bit_maske[(bytes_to_send*4)-1:(bytes_to_send*4)-4], bit_pattern[(bytes_to_send*4)-1:(bytes_to_send*4)-4]};
             if (spi_periode) begin
-              if (count_shift_pattern < (bytes_to_send-1)) begin
+              if (count_shift_pattern < (bytes_to_send)) begin
                 st_spi <= shift_pattern;
               end
               else begin
@@ -450,12 +449,18 @@ integer count_shift_pattern = 0;
             if (cnt_end) begin    // first_byte_start_of
               st_spi <= st_spi_first_byte;
               byte_counter_spi <= 0;
+              start_new = 1;
             end
           end
           st_spi_first_byte : begin
             if (cnt_end) begin    // first_byte_start_of
-              st_spi <= s_receive_Signals;
-              byte_counter_spi <= 0;
+              if (start_new) begin
+                start_new <= 0;
+              end
+              else begin
+                st_spi <= s_receive_Signals;
+                byte_counter_spi <= 0;
+              end
             end
           end
           s_receive_Signals : begin
@@ -522,7 +527,7 @@ integer idx;
     //`endif
  end
  initial begin
-    #80000000;
+    #10000000;
     $finish;
 end
 

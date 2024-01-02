@@ -1,1 +1,1 @@
-.\save_config\ila_config_ws2812_gol_23-12-19_14-43-57.json
+save_config/ila_config_ws2812_gol_24-01-02_18-54-33.json

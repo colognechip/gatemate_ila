@@ -25,14 +25,14 @@
 
 module ila_top#(
     parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 32,
-    parameter bits_samples_count_before_trigger = 4,
-    parameter bits_samples_count = 12,
-    parameter sample_width = 106,
+    parameter samples_count_before_trigger = 4096,
+    parameter bits_samples_count_before_trigger = 11,
+    parameter bits_samples_count = 13,
+    parameter sample_width = 65,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "20",
-    parameter BRAM_matrix_wide = 22,
-    parameter BRAM_matrix_deep = 1,
+    parameter sampling_freq_MHz = "40",
+    parameter BRAM_matrix_wide = 13,
+    parameter BRAM_matrix_deep = 2,
     parameter BRAM_single_wide = 5,
     parameter BRAM_single_deep = 13,
     parameter clk_delay = 2
@@ -140,9 +140,9 @@ spi_slave spi_passiv (.i_sclk(i_sclk_ILA),
 
 reg ila_reset_register;                                     // Register to reset the ILA from SPI
 
-wire slave_rec_byte_ready_post_edge, slave_rec_byte_ready_nedge_edge;
+// wire slave_rec_byte_ready_post_edge, slave_rec_byte_ready_nedge_edge;
 
-edge_detection slave_rec_byte_ready (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_signal(s_s_rec_byte_ready), .o_post_edge(slave_rec_byte_ready_post_edge), .o_nedge_edge(slave_rec_byte_ready_nedge_edge));
+//edge_detection slave_rec_byte_ready (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_signal(s_s_rec_byte_ready), .o_post_edge(slave_rec_byte_ready_post_edge), .o_nedge_edge(slave_rec_byte_ready_nedge_edge));
 
 // Processing of the received commands
 
@@ -153,7 +153,7 @@ reg ready_read;
 always @(posedge i_clk_ILA) begin
     if (!ila_reset_register) begin
         ready_read <= 0;
-    end else if (slave_rec_byte_ready_post_edge & (!config_ILA)) begin
+    end else if (!config_ILA) begin
         ready_read <= 1;
     end else
     ready_read <= 0;
@@ -161,22 +161,22 @@ end
 
 // Synchronizing received byte
 
-reg [7:0] SPI_rec_byte_stable;
-always @(posedge i_clk_ILA) begin
-    if (!ila_reset_register) begin
-        SPI_rec_byte_stable <= 0;
-    end else begin
-        SPI_rec_byte_stable <= spi_byte_receive;
-    end
-end
+//reg [7:0] SPI_rec_byte_stable;
+//always @(posedge i_clk_ILA) begin
+//    if (!ila_reset_register) begin
+//        SPI_rec_byte_stable <= 0;
+//    end else begin
+//        SPI_rec_byte_stable <= spi_byte_receive;
+//    end
+//end
 
 // Processing SPI command: ILA reset
 
 wire ila_reset_signal;
-receive_command #(.ADDR(8'b00101010)) ila_reset (.i_clk(i_clk_ILA), .i_reset(USR_RSTN), .i_ready_read(ready_read), .i_Byte(SPI_rec_byte_stable),
+receive_command #(.ADDR(8'b00101010)) ila_reset (.i_clk(i_sclk_ILA), .i_reset(USR_RSTN), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
 .i_done(!ila_reset_register), .o_hold(ila_reset_signal));
 
-always @(posedge i_clk_ILA) begin
+always @(posedge i_sclk_ILA) begin
     if (ila_reset_signal) begin
         ila_reset_register <= 0;
     end else begin
@@ -189,13 +189,13 @@ wire dut_reset_signal;
 wire trigger_active_hold;
 reg hold_done;
 
-receive_command #(.ADDR(8'b10101111)) dut_reset (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(SPI_rec_byte_stable),
+receive_command #(.ADDR(8'b10101111)) dut_reset (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
 .i_done(hold_done), .o_hold(dut_reset_signal));
 
-always @(posedge i_clk_ILA) begin
+always @(posedge i_sclk_ILA) begin
     if (!ila_reset_register) begin
         hold_done <= 0;
-    end else if (dut_reset_signal & slave_rec_byte_ready_post_edge) begin
+    end else if (dut_reset_signal & s_s_rec_byte_ready) begin
         hold_done <= 1;
     end
     else begin
@@ -203,7 +203,7 @@ always @(posedge i_clk_ILA) begin
     end
 end
 
-always @(posedge i_clk_ILA) begin
+always @(posedge i_sclk_ILA) begin
     if (!ila_reset_register | trigger_active_hold) begin
         hold_reset <= 1;
     end else if (hold_done) begin
@@ -220,21 +220,21 @@ reg  change_trigger_done;
 
 wire [3:0] data_first_trigger;
 
-rec_cmd_nib #(.ADDR(4'b1001)) change_trigger (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(SPI_rec_byte_stable),
+rec_cmd_nib #(.ADDR(4'b1001)) change_trigger (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
 .i_done(change_trigger_done), .o_hold(change_trigger_hold), .o_data(data_first_trigger));
 
 
-always @(posedge i_clk_ILA) begin
+always @(posedge i_sclk_ILA) begin
     if (!ila_reset_register) begin
         trigger_column <= 0;
         trigger_row <= 0;
         change_trigger_done <= 0;
     end
-    else if (change_trigger_hold & slave_rec_byte_ready_post_edge) begin // arbeite am timing der kommunikation hier
+    else if (change_trigger_hold & s_s_rec_byte_ready) begin // arbeite am timing der kommunikation hier
         trigger_row <= {data_first_trigger, spi_byte_receive[7:6]};
         trigger_column <= spi_byte_receive[5:0];
         change_trigger_done <= 1;
-    end else if (!change_trigger_hold & slave_rec_byte_ready_post_edge)begin
+    end else if (!change_trigger_hold & s_s_rec_byte_ready)begin
         change_trigger_done <= 0;
     end
 end
@@ -246,10 +246,10 @@ reg change_trigger_activation_done;
 reg [1:0] trigger_activation;
 wire [3:0] data_first;
 
-rec_cmd_nib #(.ADDR(4'b0011)) change_trigger_activation(.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(SPI_rec_byte_stable),
+rec_cmd_nib #(.ADDR(4'b0011)) change_trigger_activation(.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
                                .i_done(change_trigger_activation_done), .o_hold(change_trigger_activation_hold), .o_data(data_first));
 
-always @(posedge i_clk_ILA) begin
+always @(posedge i_sclk_ILA) begin
     if (!ila_reset_register) begin
         trigger_activation <= 0;
         change_trigger_activation_done <= 0;
@@ -265,7 +265,7 @@ end
 
 // Processing SPI command: Activate trigger
 
-receive_command_hold #(.ADDR(8'b01010101)) trigger_active (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(SPI_rec_byte_stable),
+receive_command_hold #(.ADDR(8'b01010101)) trigger_active (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
  .o_hold(trigger_active_hold));
 
 
@@ -273,7 +273,7 @@ receive_command_hold #(.ADDR(8'b01010101)) trigger_active (.i_clk(i_clk_ILA), .i
 
 wire ready_read_ram;
 wire read_active;    
-receive_command_hold #(.ADDR(8'b10101010)) command_read (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read_ram), .i_Byte(SPI_rec_byte_stable),
+receive_command_hold #(.ADDR(8'b10101010)) command_read (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read_ram), .i_Byte(spi_byte_receive),
  .o_hold(read_active));
  
 // Trigger detection
@@ -306,10 +306,10 @@ generate
         receive_command #(
             .ADDR(8'b11001100)
             ) change_pattern (
-                .i_clk(i_clk_ILA), 
+                .i_clk(i_sclk_ILA), 
                 .i_reset(ila_reset_register), 
                 .i_ready_read(ready_read), 
-                .i_Byte(SPI_rec_byte_stable),
+                .i_Byte(spi_byte_receive),
                 .i_done(change_pattern_done), 
                 .o_hold(change_pattern_hold));
 
@@ -317,17 +317,17 @@ generate
 
 
         if (sample_width < 5) begin
-            always @(posedge i_clk_ILA) begin
+            always @(posedge i_sclk_ILA) begin
                 if (!ila_reset_register) begin
                     bit_pattern_fit <= 0;
                     bit_mask_fit <= 0;
                     change_pattern_done <= 0;
                 end
-                if (change_pattern_hold & slave_rec_byte_ready_post_edge) begin
-                    bit_pattern_fit <= SPI_rec_byte_stable[3:0];
-                    bit_mask_fit <=  SPI_rec_byte_stable[7:4];
+                if (change_pattern_hold & s_s_rec_byte_ready) begin
+                    bit_pattern_fit <= spi_byte_receive[3:0];
+                    bit_mask_fit <=  spi_byte_receive[7:4];
                     change_pattern_done <= 1;
-                end else if (!change_pattern_hold & slave_rec_byte_ready_post_edge) begin
+                end else if (!change_pattern_hold & s_s_rec_byte_ready) begin
                     change_pattern_done <= 0;
                 end
             end
@@ -338,15 +338,15 @@ generate
             reg [3:0] bit_pattern, bit_mask; 
             reg set_mask;
 
-            always @(posedge i_clk_ILA) begin
+            always @(posedge i_sclk_ILA) begin
                 if (!ila_reset_register) begin
                     set_mask <= 0;
                     bit_pattern <= 0;
                     bit_mask <= 0;
                 end
-                if (change_pattern_hold & slave_rec_byte_ready_post_edge) begin
-                    bit_pattern <= SPI_rec_byte_stable[3:0];
-                    bit_mask <=  SPI_rec_byte_stable[7:4];
+                if (change_pattern_hold & s_s_rec_byte_ready) begin
+                    bit_pattern <= spi_byte_receive[3:0];
+                    bit_mask <=  spi_byte_receive[7:4];
                     set_mask <= 1;
                 
                 end else begin
@@ -354,7 +354,7 @@ generate
                 end
             end
 
-            always @(posedge i_clk_ILA) begin
+            always @(posedge i_sclk_ILA) begin
                 if (!ila_reset_register) begin
                     bit_pattern_fit <= 0;
                     bit_mask_fit <= 0;
@@ -364,8 +364,8 @@ generate
                     bit_mask_fit <= {bit_mask_fit[(nibble_sample*4)-5:0], bit_mask};
                 end
             end
-            always @(posedge i_clk_ILA) begin
-                if (!ila_reset_register | (!change_pattern_hold & slave_rec_byte_ready_post_edge) ) begin
+            always @(posedge i_sclk_ILA) begin
+                if (!ila_reset_register | (!change_pattern_hold & s_s_rec_byte_ready) ) begin
                     counter_rec_pattern_byte <= 0;
                     change_pattern_done <= 0;
                     end
@@ -382,19 +382,19 @@ generate
         localparam pipes = ((sample_width+1)/2);
         localparam pipes_from_pipes = ((pipes+5)/6);
         localparam add_pipe = ((pipes_from_pipes) % 2);
-        reg [(pipes_from_pipes+add_pipe-1):0] second_pipes;
-        reg [(pipes_from_pipes+add_pipe-1):0] second_pipes_control = ~0;
+        reg [(pipes_from_pipes+add_pipe-1):0] pattern_match_stage_3;
+        reg [(pipes_from_pipes+add_pipe-1):0] pattern_match_stage_3_control = ~0;
 
         if (add_pipe == 1) begin
             
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register) begin
-                    second_pipes[pipes_from_pipes] <= 1;
+                    pattern_match_stage_3[pipes_from_pipes] <= 1;
                 end
             end 
         end
-        reg [((pipes_from_pipes*6)-1):0] first_pipes;
-        reg [1:0] third_pipe;
+        reg [((pipes_from_pipes*6)-1):0] pattern_match_stage_1_1, pattern_match_stage_1_2, pattern_match_stage_2;
+        reg [1:0] pattern_match_stage_4;
         reg [(pipes*2)-1:0] sample_target_fit;
         if ((sample_width % 2) == 1) begin
             always @(posedge i_clk_ILA) begin
@@ -419,41 +419,59 @@ generate
         for (i = 0; i < (pipes*2); i = i+2) begin : loop
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register) begin
-                    first_pipes[i/2] <= 0;
+                    pattern_match_stage_1_1[i/2] <= 0;
                 end
                 else begin
-                    first_pipes[i/2] <= ((bit_mask_fit[i] | (sample_target_fit[i] == bit_pattern_fit[i])) & (bit_mask_fit[i+1] | (sample_target_fit[i+1] == bit_pattern_fit[i+1])));
+                    pattern_match_stage_1_1[i/2] <= (bit_mask_fit[i] | (sample_target_fit[i] == bit_pattern_fit[i]));
+                end
+            end
+            always @(posedge i_clk_ILA) begin
+                if (!ila_reset_register) begin
+                    pattern_match_stage_1_2[i/2] <= 0;
+                end
+                else begin
+                    pattern_match_stage_1_2[i/2] <= ((bit_mask_fit[i+1] | (sample_target_fit[i+1] == bit_pattern_fit[i+1])));
+                end
+            end
+            always @(posedge i_clk_ILA) begin
+                if (!ila_reset_register) begin
+                    pattern_match_stage_2[i/2] <= 0;
+                end
+                else begin
+                    pattern_match_stage_2[i/2] <= (pattern_match_stage_1_1[i/2] & pattern_match_stage_1_2[i/2]);
                 end
             end
         end
         if ((pipes_from_pipes*6) > pipes) begin
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register) begin
-                    first_pipes[((pipes_from_pipes*6)-1):pipes] <= ~0;
+                    pattern_match_stage_2[((pipes_from_pipes*6)-1):pipes] <= ~0;
+                    pattern_match_stage_1_1[((pipes_from_pipes*6)-1):pipes] <= ~0;
+                    pattern_match_stage_1_2[((pipes_from_pipes*6)-1):pipes] <= ~0;
                 end
             end 
         end
         for (i = 0; i < pipes_from_pipes; i = i+1) begin : loop2
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register) begin
-                    second_pipes[i] <= 0;
+                    pattern_match_stage_3[i] <= 0;
                 end
-                else if (first_pipes[((6*(i+1))-1):6*i] == 6'b111111) begin
-                    second_pipes[i] <= 1;
+                else if (pattern_match_stage_2[((6*(i+1))-1):6*i] == 6'b111111) begin
+                    pattern_match_stage_3[i] <= 1;
                 end else begin
-                    second_pipes[i] <= 0;
+                    pattern_match_stage_3[i] <= 0;
                 end
             end
         end
         for (i = 0; i < 2; i = i+1) begin : loop3
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register) begin
-                    third_pipe[i] <= 0;
+                    pattern_match_stage_4[i] <= 0;
                 end
-                else if (second_pipes[((((pipes_from_pipes+add_pipe)/2)*(1+i))-1):(((pipes_from_pipes+add_pipe)/2)*i)] == second_pipes_control[((((pipes_from_pipes+add_pipe)/2)*(1+i))-1):(((pipes_from_pipes+add_pipe)/2)*i)]) begin
-                    third_pipe[i] <= 1;
+                else if (pattern_match_stage_3[((((pipes_from_pipes+add_pipe)/2)*(1+i))-1):(((pipes_from_pipes+add_pipe)/2)*i)] == pattern_match_stage_3_control[((((pipes_from_pipes+add_pipe)/2)*(1+i))-1):(((pipes_from_pipes+add_pipe)/2)*i)]) begin
+                    pattern_match_stage_4[i] <= 1;
                 end else begin
-                    third_pipe[i] <= 0;
+                    pattern_match_stage_4[i] <= 0;
                 end
             end
         end
@@ -463,7 +481,7 @@ generate
                 trigger_detect_pattern_arrived <= 0;
                 trigger_detect_pattern_arrived_pipe <= 0;
             end
-            else if (third_pipe == 2'b11) begin
+            else if (pattern_match_stage_4 == 2'b11) begin
                 trigger_detect_pattern_arrived_pipe <= 1;
                 trigger_detect_pattern_arrived <= trigger_detect_pattern_arrived_pipe;
             end
@@ -511,7 +529,7 @@ always @(posedge i_clk_ILA) begin
     end
 end
 
-assign ready_read_ram = trigger_triggered & slave_rec_byte_ready_post_edge; 
+assign ready_read_ram = trigger_triggered & s_s_rec_byte_ready; 
 
              
 // memory management
@@ -537,10 +555,11 @@ bram_control #(.samples_count_before_trigger(samples_count_before_trigger),
             .BRAM_matrix_deep(BRAM_matrix_deep),
             .BRAM_single_wide(BRAM_single_wide),
             .BRAM_single_deep(BRAM_single_deep)) mem_control (.i_clk_ILA(i_clk_ILA), 
+            .i_sclk(i_sclk_ILA),
             .i_reset(trigger_active_hold),
             .i_read_active(read_active),  
             .i_sample(sample), 
-            .i_slave_end_byte_post_edge(slave_rec_byte_ready_post_edge), 
+            .i_slave_end_byte_post_edge(s_s_rec_byte_ready), 
             .i_trigger_triggered(trigger_triggered), 
             .o_send_byte(spi_data_send),
             .o_write_done(write_done),

@@ -402,8 +402,7 @@ For example: `12, 10:8, 4, 2:0`.
 The sampling frequency defines the delay between the stored samples.
 
 - The sampling frequency is recommend up to 160MHz.
-- The sampling frequency is recommend to be at least twice the highest frequency at which a signal under test changes its state in order to correctly reconstruct the signals.
-- It is recommended that the sampling frequency be an integer multiple of the frequency at which the signals under test change their state.
+- It is recommended that the sampling frequency be equal to or an integer multiple of the frequency at which the signals under test change their state.
 
 Please note: The higher the sampling frequency, the shorter the period of time that can be captured in a single shot because the random-access memory (RAM) fills up more quickly
 

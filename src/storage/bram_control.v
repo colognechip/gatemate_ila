@@ -35,6 +35,7 @@ module bram_control#(
     
 )(
     input i_clk_ILA,
+    input i_sclk,
     input i_reset,
     input i_read_active,
     input [(sample_width-1):0] i_sample,
@@ -89,7 +90,8 @@ generate
         for (i = 0; i < BRAM_matrix_deep; i = i+1) begin : loop
             bram_ila  #(.DATA_WIDTH(BRAM_single_wide), 
                         .ADDR_WIDTH(BRAM_single_deep)) 
-            ila_bram   (.clk(i_clk_BRAM), 
+            ila_bram   (.clk(i_clk_BRAM),
+                        .rclk(i_sclk), 
                         .we(we_BRAM[i]),
                         .di(i_sample[((BRAM_single_wide)*(j+1)-1):(BRAM_single_wide)*(j)]),
                         .addr_read(addr_cnt_rd[BRAM_single_deep-1:0]),
@@ -136,13 +138,14 @@ always @(posedge i_clk_ILA) begin
 end
 
 
-always @(posedge i_clk_ILA) begin         
-    if (!i_reset) begin
-        addr_cnt_rd <= 0;
-    end
-    else if ((!write_done & period_done) | rd_nxt) begin 
+always @(posedge i_sclk) begin         
+    if (rd_nxt) begin 
         addr_cnt_rd <= addr_cnt_rd+1;
     end
+    else if (write_done & (!i_read_active)) begin
+        addr_cnt_rd <= addr_cnt_wd+1;
+    end
+
 end
 
 
@@ -150,8 +153,8 @@ always @(posedge i_clk_ILA) begin
     if (!i_reset) begin
         addr_cnt_wd <= 0;
     end
-    else begin
-            addr_cnt_wd <= addr_cnt_wd + 1;
+    else if (!write_done) begin
+        addr_cnt_wd <= addr_cnt_wd + 1;
     end
 end
 
@@ -198,7 +201,7 @@ assign o_write_done = write_done;
 
 generate
     if (sample_width > 8) begin 
-        smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_clk_ILA), .i_read_active(i_read_active), 
+        smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_sclk), .i_read_active(i_read_active), 
                                                         .i_ram_sample(RAM_smp_out),
                                                         .i_slave_end_byte_post_edge(i_slave_end_byte_post_edge),
                                                         .o_send_byte(o_send_byte), .o_rd(rd_nxt));
@@ -206,7 +209,7 @@ generate
     else begin
         reg [7:0] send_byte_sync;
         localparam rest_send_byte = 8 - sample_width;
-        always  @(posedge i_clk_ILA) begin
+        always  @(posedge i_sclk) begin
             if (!i_reset) begin 
                 send_byte_sync <= 0;
             end
