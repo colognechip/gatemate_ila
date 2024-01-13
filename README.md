@@ -24,20 +24,26 @@ With the ILA, you can perform in-system debugging of your designs on the GateMat
   - [Installation of a wave viewer](#installation-of-a-wave-viewer)
     - [GTKWave](#gtkwave)
     - [Other wave viewers](#other-wave-viewers)
-- [Basic ILA setup](#basic-ila-setup)
+  - [Note for use in wsl](#note-for-use-in-wsl)
   - [Define Linux access rules for USB](#define-linux-access-rules-for-usb)
+- [Basic ILA setup](#basic-ila-setup)  
+  - [Access to external software](#access-to-external-software)
+  - [Setting Up Communication with External Hardware](#setting-up-communication-with-external-hardware)
 - [Hardware setup](#hardware-setup)
 - [ILA functionality](#ila-functionality)
   - [Trigger condition](#trigger-condition)
   - [Signal analysis](#signal-analysis)
   - [Frequency analysis](#frequency-analysis)
   - [Capture duration](#capture-duration)
+  - [User controllable reset](#user-controllable-reset)
 - [Usage](#usage)
   - [ILAcop parameters and options](#ilacop-parameters-and-options)
     - [Change external clock frequency](#change-external-clock-frequency)
     - [Phase shift](#phase-shift)
     - [Optimize DUT](#optimize-dut)
     - [Change work dir](#change-work-dir) 
+    - [Clean](#clean)
+    - [Synchronise signals under test](#synchronise-signals-under-test)
   - [Configuration with the interactive shell](#configuration-with-the-interactive-shell) 
   - [Create JSON](#create-json)
   - [Reconfiguaration of the ILA using a JSON File](#reconfiguaration-of-the-ila-using-a-json-file)
@@ -1474,12 +1480,27 @@ An example of how a sequence is set and triggered can be found in: [ws2812_gol](
 
 ## More examples
 
-
+Complete examples of the DUT execution and the generated waveforms can be found in the  [example_dut](example_dut) folder.
 
 
 ### JSON File
 
+The ILA can be configured from the JSON file.
 
+The following can be configured:
+
+
+#### ILA_sampling_freq_MHz
+
+The string represents the frequency in MHz at which the signals under test are captured. String that contains only a decimal number.
+
+#### SUT_signals
+
+- Signal_type: Signal type. Possible types are: 'wire', or 'reg'
+- Signal_range: Size and orientation of the signal vector.
+- Signal_moduls: Module where the signal is defined, listed hierarchically.
+- Signal_name: Name of the signal.
+- selected: Select a signal to be analyzed by the ILA. 'A' = full signalwidth, e.g: '[1:0]' =  area of the vector (The area shouldbe within the vector area and orientation), e.g.: '1' = individual signal, e.g.: '9, [7:5], 3, [1:0] = anycombination of areas and individual signals.
 
 You can define the analysis signals in the following ways:
 <pre>
@@ -1524,7 +1545,14 @@ You can define the analysis signals in the following ways:
 	]
 },
 </pre>
-With `['A']` you can select the entire vector. You also can specific individual signals, subsections of the vector, or a combination of individual signals and subsections within the vector's range.
+
+#### external_clk_freq
+Defines the external clock frequency.
+
+#### sample_compare_pattern
+
+With this parameter, you can toggle the pattern compare function, reducing logic use and shortening the critical path when deactivated.
+
 
 Afterwards, the corresponding entries must be added to the created file and the ILA can be started again with `python3 ILAcop.py reconfig -l ila_config_....json`.
 
