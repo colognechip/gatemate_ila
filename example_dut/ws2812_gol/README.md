@@ -15,14 +15,19 @@ For this purpose, the states of the 8x8 'Game of Life' matrix, with one RGB valu
 
 ## ILA Configuration
 
+This ILA configuration example shows how to filter the signals of a large design under test by module and set triggers over several sequences.
+
 The output of the interactive shell can be found in the file [example_output/ILA_ws2812_gol_terminal_out.](example_output/ILA_ws2812_gol_terminal_out)
 
 The ILA was configured as follows:
 
+- The external clock was selected as the analysis frequency. 
+- The external reset was selected as the user controllable reset.
+
 - Number of selected bits to be analysed: 	110
 - Signals under test:
-    1. **clk**  
-        External clock source of 10 MHz.  
+    1. **aserial.run**  
+        indicates when a data bit is serialized for the ws2812 driver 
     2. **gol_init**  
         This signal is used to initialise the GoL matrix with a given pattern.
     3. **gol_next_gen**  
@@ -44,56 +49,31 @@ The ILA was configured as follows:
     11. **data_out**  
         Serial data line for the WS2812 matrix.
 
-- Sampling frequency: 40 MHz
-- Capture duration before Trigger: Sample count = 8, Capture duration = 0.2 us
-- Capture duration after Trigger: Sample count = 8184, Capture duration = 204.06 us
+- Capture duration before Trigger: Sample count = 23, Capture duration = 2.3 us.
+- Capture duration after Trigger: Sample count = 8169, Capture duration = 816.9 us.
 
 ## Generated waveform and images of the hardware
 
-The DUT was hold in reset-state with the function: "reset DUT (hold the DUT in reset until the capture starts)" until the capture starts. The initial pattern shown there is an oscillating object that has 5 different cycles.
+The DUT was hold in reset-state with the function: "reset DUT (hold the DUT in reset until the capture starts)" until the capture starts. The pattern shown in the GoL-Matrix is an oscillating object with 5 distinct cycles.
 
-Six trigger sequences were set. The first sequence has the trigger "rising edge " on the signal "\golx64.gol_init" and the following sequences all have the trigger "rising edge" on "\golx64.gol_next_gen".
+Six trigger sequences were set. All sequences have the trigger "rising edge" on "\golx64.gol_next_gen".
 
-### Sequence 1
+In each waveform, the GoL matrix can be seen in binary representation. Once the trigger is activated, meaning the gol_next_gen signal switches from '0' to '1', the next state of the GoL is calculated. Since there are actually 64 GoL cells on the FPGA and all of them calculate their next state simultaneously, the next state of the GoL matrix is computed in a single clock cycle.
 
-![Sequence 1: GoL LED-Matrix after init](example_output/ws2812_gol_seq_1.jpg)
-The image shows the initial state of the RGB LED matrix.
-
-![Sequence 1, Waveform init GoL](example_output/ILA_ws2812_gol_seq_1_init_GoL.png)
-
-The first capture image clearly shows how the matrix is initialised with the corresponding pattern. The vectors that represent 'life_out' are shown in binary representation to make it easier to recognise the pattern. After initialisation, it can be seen that 'shift_life_row' is initialised with the first row and the data is prepared for the WS2812 matrix.
-
-![Sequence 1, Waveform write RAM](example_output/ILA_ws2812_gol_seq_1_write_RAM.png)
+After calculating the next generation, it can be seen that 'shift_life_row' is initialized with the first row, and the data is prepared for the WS2812 matrix.
 
 In the further course of the waveform, you can see how the output bits of the GoL cells are converted into the corresponding RGB values and written into the RAM.
 
-![Sequence 1, Waveform ws2812 out](example_output/ILA_ws2812_gol_seq_1_ws2812_out.png)
-
 The last part of the waveform shows how the rgb values are read from the RAM and transmitted serially to the output for the LED matrix in the sequence typical for ws2812.
 
-The following sequences show how the trigger is triggered after a risingedge for next_gen and how the next generation is calculated.
+![Sequence 1: GoL ws2812](example_output/ILA_ws2812_gol_seq_1.png)
 
-### Sequence 2
+![Sequence 2: GoL ws2812](example_output/ILA_ws2812_gol_seq_2.png)
 
-![Sequence 2: GoL LED-Matrix after next Generation](example_output/ws2812_gol_seq_2.jpg)
+![Sequence 3: GoL ws2812](example_output/ILA_ws2812_gol_seq_3.png)
 
-![Sequence 2, Waveform next Generation GoL](example_output/ILA_ws2812_gol_seq_2.png)
+![Sequence 4: GoL ws2812](example_output/ILA_ws2812_gol_seq_4.png)
 
-### Sequence 3
+![Sequence 5: GoL ws2812](example_output/ILA_ws2812_gol_seq_5.png)
 
-![Sequence 3: GoL LED-Matrix after next Generation](example_output/ws2812_gol_seq_3.jpg)
-
-![Sequence 3, Waveform next Generation GoL](example_output/ILA_ws2812_gol_seq_3.png)
-
-### Sequence 4
-
-![Sequence 4: GoL LED-Matrix after next Generation](example_output/ws2812_gol_seq_4.jpg)
-
-![Sequence 4, Waveform next Generation GoL](example_output/ILA_ws2812_gol_seq_4.png)
-
-### Sequence 5
-
-![Sequence 5: GoL LED-Matrix after next Generation](example_output/ws2812_gol_seq_5.jpg)
-
-![Sequence 5, Waveform next Generation GoL](example_output/ILA_ws2812_gol_seq_5.png)
-
+![Sequence 6: GoL ws2812](example_output/ILA_ws2812_gol_seq_6.png)

@@ -1,4 +1,4 @@
-gatemate_ila\app> python3 ILAcop.py config -vhd C:\Users\df\gatemate_ila\example_DUT\ws2812_gol\src -t ws2812_gol
+gatemate_ila\app> python3 ILAcop.py config -vhd ..\example_DUT\ws2812_gol\src\ -t ws2812_gol
 
 ################# ccf File ##################
 #                                           #
@@ -25,26 +25,13 @@ gatemate_ila\app> python3 ILAcop.py config -vhd C:\Users\df\gatemate_ila\example
 Examine DUT ...
 
 
-################ RAM in use #################
+############# Block RAM in use ##############
 #                                           #
 # CC_BRAM_20K in use: 1                     #
 # CC_BRAM_40K in use: 0                     #
 #                                           #
 #############################################
 
------ Ports DUT "ws2812_gol" ------
-+---+--------+-------+------------+
-| # |  type  | range |    Name    |
-+---+--------+-------+------------+
-| 0 | input  |   1   |    clk     |
-| 1 | input  |   1   |   i_mosi   |
-| 2 | input  |   1   |   i_sclk   |
-| 3 | input  |   1   |    i_ss    |
-| 4 | input  |   1   |   reset    |
-| 5 | output | [7:0] |    led     |
-| 6 | output |   1   |   o_miso   |
-| 7 | output |   1   | ws2812_out |
-+---+--------+-------+------------+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                              !
@@ -56,41 +43,46 @@ Examine DUT ...
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                    !
-! The clk-source is crucial, as they also serve as the ILA's source. !
-! The ILA gateware expects a frequency of 10 MHz by default.         !
-! If the frequency deviates, change the input frequency value        !
-! with the -f parameter when starting the program.                   !
-!                                                                    !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                       !
+! In the following, a clock source for the ILA should be selected.      !
+! Usually, the same clk signal that clocks the tested signals suffices. !
+!                                                                       !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-############ CONFIGURATION NOTE #############
+Here are the possible ways to provide a clock to the ILA:
+
+ 1 = Use an external clk input signal.
+ 2 = Use an additional PLL with a freely selectable frequency (additional net of the global Mesh are required).
+
+please choose between 1 and 2: 1
+
+########### found DUT clk source ############
 #                                           #
-# clk source:    "clk"                      #
+# Input serves as ILA clk source: "clk"     #
 #                                           #
 #############################################
 
-Do you want to change the clk source? (y:yes/N:no)
+Do you want to change the clk source? (y:yes/N:no):
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!! User controllable reset !!!!!!!!!!!!!!!!!!!!
 !                                                                !
 ! The ILA can hold the DUT in reset until capture starts.        !
 ! This makes it possible to capture the start process of the DUT !
+! Attention, the ila treats the signal as active LOW             !
 !                                                                !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+The following options are available:
 
-######################## Found external reset input ########################
-#                                                                          #
-# A potential external reset input signal has been identified,             #
-# which can be used to keep the DUT in reset mode via the ILA, if desired. #
-# Name of the signal: 'reset'                                              #
-#                                                                          #
-############################################################################
+ 1 = Use an external reset input signal. Potential input found: reset
+ 2 = Deactivate this function.
 
-Would you like to set a different input signal as a user-controllable reset? (y:yes/N:no)
+please choose between 1 and 2: 1
+
+Would you like to choose a different user controllable input than 'reset'? (y:yes/N:no):
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                                 !
@@ -124,6 +116,8 @@ Would you like to set a different input signal as a user-controllable reset? (y:
 ...
 | 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
 ...
+| 1189 | start_ram_to_bit     |    1    |    []    |                          |
+...
 | 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
 | 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
 +------+----------------------+---------+----------+--------------------------+
@@ -134,37 +128,110 @@ Would you like to set a different input signal as a user-controllable reset? (y:
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 3
+Select signals to be analyzed (0 = finish, f = filter): f
 
---------------------------------- ws2812_gol ----------------------------------
-+------+----------------------+---------+----------+--------------------------+
-|    # | name                 |  range  | selected | hierarchy                |
-+------+----------------------+---------+----------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |    []    |                          |
-|    2 | byte_send            |  [7:0]  |    []    |                          |
-|    3 | clk                  |    1    |  ['A']   |                          |
+--------------------- SUT moduls ----------------------
++----+------------------------------------------------+
+|  # | moduls                                         |
++----+------------------------------------------------+
+|  0 | ws2812_gol.                                    |
+|  1 | ws2812_gol.\dualportram.                       |
+|  2 | ws2812_gol.\golx64.                            |
+|  3 | ws2812_gol.\golx64.gol_row:1.gol_column:1.gol. |
+|  4 | ws2812_gol.\golx64.gol_row:1.gol_column:2.gol. |
 ...
-|   38 | gol_init             |    1    |    []    | \golx64.                 |
-|   39 | gol_next_gen         |    1    |    []    | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
-|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
-+------+----------------------+---------+----------+--------------------------+
+| 65 | ws2812_gol.\golx64.gol_row:8.gol_column:7.gol. |
+| 66 | ws2812_gol.\golx64.gol_row:8.gol_column:8.gol. |
+| 67 | ws2812_gol.\ram_to_bit.                        |
+| 68 | ws2812_gol.\ram_to_bit.addrcnt.                |
+| 69 | ws2812_gol.\ram_to_bit.aserial.                |
+| 70 | ws2812_gol.\ram_to_bit.shift_cnt.              |
+| 71 | ws2812_gol.\spi_edge_detect.                   |
+| 72 | ws2812_gol.\spi_slave.                         |
+| 73 | ws2812_gol.\write_bram_rec_cmd.                |
++----+------------------------------------------------+
+
+Select a module from which you would like to analyze signals: 2
+
+---------------- \golx64. signals ----------------
++----+----------------------+---------+----------+
+|  # | name                 |  range  | selected |
++----+----------------------+---------+----------+
+|  1 | break_counter        |  [23:0] |    []    |
+|  2 | clk                  |    1    |    []    |
+|  3 | counter_index        |  [3:0]  |    []    |
+|  4 | din_spi              |  [7:0]  |    []    |
+|  5 | gol_init             |    1    |    []    |
+|  6 | gol_next_gen         |    1    |    []    |
+|  7 | init_pattern         |  [63:0] |    []    |
+|  8 | life_out             |  [99:0] |    []    |
+|  9 | life_shift_cnt       |  [2:0]  |    []    |
+| 10 | nachbarn             |  [35:0] |    []    |
+| 11 | neighbours_in        | [511:0] |    []    |
+| 12 | reset                |    1    |    []    |
+| 13 | rgb_color            |  [1:0]  |    []    |
+| 14 | shift_life_row       |  [7:0]  |    []    |
+| 15 | start_sm_new         |    1    |    []    |
+| 16 | state_color_to_ram   |  [2:0]  |    []    |
+| 17 | tl_gol_state         |  [3:0]  |    []    |
+| 18 | waddr_spi            |  [2:0]  |    []    |
+| 19 | write_en             |    1    |    []    |
+| 20 | write_en_ram         |    1    |    []    |
+| 21 | write_en_s           |    1    |    []    |
+| 22 | write_ws2812_out     |    1    |    []    |
+| 23 | write_ws2812_s       |    1    |    []    |
+| 24 | writeram             |    1    |    []    |
+| 25 | ws2812_busy          |    1    |    []    |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |    []    |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |    []    |
+| 28 | ws2812_rgb_byte      |  [7:0]  |    []    |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |    []    |
++----+----------------------+---------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 0 (max. 1180)                             #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 5
+
+---------------- \golx64. signals ----------------
++----+----------------------+---------+----------+
+|  # | name                 |  range  | selected |
++----+----------------------+---------+----------+
+|  1 | break_counter        |  [23:0] |    []    |
+|  2 | clk                  |    1    |    []    |
+|  3 | counter_index        |  [3:0]  |    []    |
+|  4 | din_spi              |  [7:0]  |    []    |
+|  5 | gol_init             |    1    |  ['A']   |
+|  6 | gol_next_gen         |    1    |    []    |
+|  7 | init_pattern         |  [63:0] |    []    |
+|  8 | life_out             |  [99:0] |    []    |
+|  9 | life_shift_cnt       |  [2:0]  |    []    |
+| 10 | nachbarn             |  [35:0] |    []    |
+| 11 | neighbours_in        | [511:0] |    []    |
+| 12 | reset                |    1    |    []    |
+| 13 | rgb_color            |  [1:0]  |    []    |
+| 14 | shift_life_row       |  [7:0]  |    []    |
+| 15 | start_sm_new         |    1    |    []    |
+| 16 | state_color_to_ram   |  [2:0]  |    []    |
+| 17 | tl_gol_state         |  [3:0]  |    []    |
+| 18 | waddr_spi            |  [2:0]  |    []    |
+| 19 | write_en             |    1    |    []    |
+| 20 | write_en_ram         |    1    |    []    |
+| 21 | write_en_s           |    1    |    []    |
+| 22 | write_ws2812_out     |    1    |    []    |
+| 23 | write_ws2812_s       |    1    |    []    |
+| 24 | writeram             |    1    |    []    |
+| 25 | ws2812_busy          |    1    |    []    |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |    []    |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |    []    |
+| 28 | ws2812_rgb_byte      |  [7:0]  |    []    |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |    []    |
++----+----------------------+---------+----------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
@@ -172,37 +239,42 @@ Which signals should be analyzed (0 = finish)? 3
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 38
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 6
+---------------- \golx64. signals ----------------
++----+----------------------+---------+----------+
+|  # | name                 |  range  | selected |
++----+----------------------+---------+----------+
+|  1 | break_counter        |  [23:0] |    []    |
+|  2 | clk                  |    1    |    []    |
+|  3 | counter_index        |  [3:0]  |    []    |
+|  4 | din_spi              |  [7:0]  |    []    |
+|  5 | gol_init             |    1    |  ['A']   |
+|  6 | gol_next_gen         |    1    |  ['A']   |
+|  7 | init_pattern         |  [63:0] |    []    |
+|  8 | life_out             |  [99:0] |    []    |
+|  9 | life_shift_cnt       |  [2:0]  |    []    |
+| 10 | nachbarn             |  [35:0] |    []    |
+| 11 | neighbours_in        | [511:0] |    []    |
+| 12 | reset                |    1    |    []    |
+| 13 | rgb_color            |  [1:0]  |    []    |
+| 14 | shift_life_row       |  [7:0]  |    []    |
+| 15 | start_sm_new         |    1    |    []    |
+| 16 | state_color_to_ram   |  [2:0]  |    []    |
+| 17 | tl_gol_state         |  [3:0]  |    []    |
+| 18 | waddr_spi            |  [2:0]  |    []    |
+| 19 | write_en             |    1    |    []    |
+| 20 | write_en_ram         |    1    |    []    |
+| 21 | write_en_s           |    1    |    []    |
+| 22 | write_ws2812_out     |    1    |    []    |
+| 23 | write_ws2812_s       |    1    |    []    |
+| 24 | writeram             |    1    |    []    |
+| 25 | ws2812_busy          |    1    |    []    |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |    []    |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |    []    |
+| 28 | ws2812_rgb_byte      |  [7:0]  |    []    |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |    []    |
++----+----------------------+---------+----------+
 
---------------------------------- ws2812_gol ----------------------------------
-+------+----------------------+---------+----------+--------------------------+
-|    # | name                 |  range  | selected | hierarchy                |
-+------+----------------------+---------+----------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |    []    |                          |
-|    2 | byte_send            |  [7:0]  |    []    |                          |
-|    3 | clk                  |    1    |  ['A']   |                          |
-...
-|   38 | gol_init             |    1    |  ['A']   | \golx64.                 |
-|   39 | gol_next_gen         |    1    |    []    | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
-|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
-+------+----------------------+---------+----------+--------------------------+
 
 ## Number of selected bits to be analysed ###
 #                                           #
@@ -210,45 +282,7 @@ Which signals should be analyzed (0 = finish)? 38
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 39
-
---------------------------------- ws2812_gol ----------------------------------
-+------+----------------------+---------+----------+--------------------------+
-|    # | name                 |  range  | selected | hierarchy                |
-+------+----------------------+---------+----------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |    []    |                          |
-|    2 | byte_send            |  [7:0]  |    []    |                          |
-|    3 | clk                  |    1    |  ['A']   |                          |
-...
-|   38 | gol_init             |    1    |  ['A']   | \golx64.                 |
-|   39 | gol_next_gen         |    1    |  ['A']   | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
-|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
-+------+----------------------+---------+----------+--------------------------+
-
-## Number of selected bits to be analysed ###
-#                                           #
-# 3 (max. 1180)                             #
-#                                           #
-#############################################
-
-Which signals should be analyzed (0 = finish)? 41
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 8
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -267,47 +301,52 @@ Which signals should be analyzed (0 = finish)? 41
 
 wire [99:0] life_out: 88:81, 78:71, 68:61, 58:51, 48:41, 38:31, 28:21, 18:11
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |         []         | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |         []         | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |       ['A']        |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |         []         |
+| 14 | shift_life_row       |  [7:0]  |         []         |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |         []         |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |         []         |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 67 (max. 1180)                            #
+# 66 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 46
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 13
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -326,47 +365,52 @@ Which signals should be analyzed (0 = finish)? 46
 
 wire [1:0] rgb_color:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |         []         | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |       ['A']        |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |       ['A']        |
+| 14 | shift_life_row       |  [7:0]  |         []         |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |         []         |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |         []         |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 69 (max. 1180)                            #
+# 68 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 47
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 14
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -385,47 +429,52 @@ Which signals should be analyzed (0 = finish)? 47
 
 wire [7:0] shift_life_row:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |       ['A']        |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |       ['A']        |
+| 14 | shift_life_row       |  [7:0]  |       ['A']        |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |         []         |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |         []         |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 77 (max. 1180)                            #
+# 76 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 59
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 26
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -444,47 +493,52 @@ Which signals should be analyzed (0 = finish)? 59
 
 wire [7:0] ws2812_ram_addr_wr:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |       ['A']        |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |       ['A']        |
+| 14 | shift_life_row       |  [7:0]  |       ['A']        |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |         []         |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 85 (max. 1180)                            #
+# 84 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 62
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 29
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -503,47 +557,110 @@ Which signals should be analyzed (0 = finish)? 62
 
 wire [7:0] ws2812_rgb_byte_reg:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |       ['A']        |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |       ['A']        |
+| 14 | shift_life_row       |  [7:0]  |       ['A']        |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 93 (max. 1180)                            #
+# 92 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 1166
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): c
+
+--------------------- SUT moduls ----------------------
++----+------------------------------------------------+
+|  # | moduls                                         |
++----+------------------------------------------------+
+|  0 | ws2812_gol.                                    |
+|  1 | ws2812_gol.\dualportram.                       |
+|  2 | ws2812_gol.\golx64.                            |
+|  3 | ws2812_gol.\golx64.gol_row:1.gol_column:1.gol. |
+|  4 | ws2812_gol.\golx64.gol_row:1.gol_column:2.gol. |
+...
+| 65 | ws2812_gol.\golx64.gol_row:8.gol_column:7.gol. |
+| 66 | ws2812_gol.\golx64.gol_row:8.gol_column:8.gol. |
+| 67 | ws2812_gol.\ram_to_bit.                        |
+| 68 | ws2812_gol.\ram_to_bit.addrcnt.                |
+| 69 | ws2812_gol.\ram_to_bit.aserial.                |
+| 70 | ws2812_gol.\ram_to_bit.shift_cnt.              |
+| 71 | ws2812_gol.\spi_edge_detect.                   |
+| 72 | ws2812_gol.\spi_slave.                         |
+| 73 | ws2812_gol.\write_bram_rec_cmd.                |
++----+------------------------------------------------+
+
+Select a module from which you would like to analyze signals:  67
+
+------------ \ram_to_bit. signals ------------
++----+--------------------+-------+----------+
+|  # | name               | range | selected |
++----+--------------------+-------+----------+
+|  1 | acnt_eq191         |   1   |    []    |
+|  2 | acnt_inc           |   1   |    []    |
+|  3 | acnt_rst           |   1   |    []    |
+|  4 | aserial_run        |   1   |    []    |
+|  5 | aserial_wnr        |   1   |    []    |
+|  6 | clk                |   1   |    []    |
+|  7 | data_in_s          |   1   |    []    |
+|  8 | datapuffer         | [7:0] |    []    |
+|  9 | dataread           | [7:0] |    []    |
+| 10 | raddr              | [7:0] |    []    |
+| 11 | reset              |   1   |    []    |
+| 12 | sfr_done           |   1   |    []    |
+| 13 | sfr_load           |   1   |    []    |
+| 14 | sfr_shift          |   1   |    []    |
+| 15 | shift_rgb_byte     | [7:0] |    []    |
+| 16 | start              |   1   |    []    |
+| 17 | state              | [2:0] |    []    |
+| 18 | working            |   1   |    []    |
+| 19 | ws2812_out         |   1   |    []    |
+| 20 | ws2812_ram_addr_rd | [7:0] |    []    |
++----+--------------------+-------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 92 (max. 1180)                            #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 15
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -562,47 +679,40 @@ Which signals should be analyzed (0 = finish)? 1166
 
 wire [7:0] shift_rgb_byte:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+------------ \ram_to_bit. signals ------------
++----+--------------------+-------+----------+
+|  # | name               | range | selected |
++----+--------------------+-------+----------+
+|  1 | acnt_eq191         |   1   |    []    |
+|  2 | acnt_inc           |   1   |    []    |
+|  3 | acnt_rst           |   1   |    []    |
+|  4 | aserial_run        |   1   |    []    |
+|  5 | aserial_wnr        |   1   |    []    |
+|  6 | clk                |   1   |    []    |
+|  7 | data_in_s          |   1   |    []    |
+|  8 | datapuffer         | [7:0] |    []    |
+|  9 | dataread           | [7:0] |    []    |
+| 10 | raddr              | [7:0] |    []    |
+| 11 | reset              |   1   |    []    |
+| 12 | sfr_done           |   1   |    []    |
+| 13 | sfr_load           |   1   |    []    |
+| 14 | sfr_shift          |   1   |    []    |
+| 15 | shift_rgb_byte     | [7:0] |  ['A']   |
+| 16 | start              |   1   |    []    |
+| 17 | state              | [2:0] |    []    |
+| 18 | working            |   1   |    []    |
+| 19 | ws2812_out         |   1   |    []    |
+| 20 | ws2812_ram_addr_rd | [7:0] |    []    |
++----+--------------------+-------+----------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 101 (max. 1180)                           #
+# 100 (max. 1180)                           #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 1171
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 20
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                                  !
@@ -621,39 +731,102 @@ Which signals should be analyzed (0 = finish)? 1171
 
 wire [7:0] ws2812_ram_addr_rd:
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
+------------ \ram_to_bit. signals ------------
++----+--------------------+-------+----------+
+|  # | name               | range | selected |
++----+--------------------+-------+----------+
+|  1 | acnt_eq191         |   1   |    []    |
+|  2 | acnt_inc           |   1   |    []    |
+|  3 | acnt_rst           |   1   |    []    |
+|  4 | aserial_run        |   1   |    []    |
+|  5 | aserial_wnr        |   1   |    []    |
+|  6 | clk                |   1   |    []    |
+|  7 | data_in_s          |   1   |    []    |
+|  8 | datapuffer         | [7:0] |    []    |
+|  9 | dataread           | [7:0] |    []    |
+| 10 | raddr              | [7:0] |    []    |
+| 11 | reset              |   1   |    []    |
+| 12 | sfr_done           |   1   |    []    |
+| 13 | sfr_load           |   1   |    []    |
+| 14 | sfr_shift          |   1   |    []    |
+| 15 | shift_rgb_byte     | [7:0] |  ['A']   |
+| 16 | start              |   1   |    []    |
+| 17 | state              | [2:0] |    []    |
+| 18 | working            |   1   |    []    |
+| 19 | ws2812_out         |   1   |    []    |
+| 20 | ws2812_ram_addr_rd | [7:0] |  ['A']   |
++----+--------------------+-------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 108 (max. 1180)                           #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): c
+
+--------------------- SUT moduls ----------------------
++----+------------------------------------------------+
+|  # | moduls                                         |
++----+------------------------------------------------+
+|  0 | ws2812_gol.                                    |
+|  1 | ws2812_gol.\dualportram.                       |
+|  2 | ws2812_gol.\golx64.                            |
+|  3 | ws2812_gol.\golx64.gol_row:1.gol_column:1.gol. |
+|  4 | ws2812_gol.\golx64.gol_row:1.gol_column:2.gol. |
 ...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |       ['A']        | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+| 65 | ws2812_gol.\golx64.gol_row:8.gol_column:7.gol. |
+| 66 | ws2812_gol.\golx64.gol_row:8.gol_column:8.gol. |
+| 67 | ws2812_gol.\ram_to_bit.                        |
+| 68 | ws2812_gol.\ram_to_bit.addrcnt.                |
+| 69 | ws2812_gol.\ram_to_bit.aserial.                |
+| 70 | ws2812_gol.\ram_to_bit.shift_cnt.              |
+| 71 | ws2812_gol.\spi_edge_detect.                   |
+| 72 | ws2812_gol.\spi_slave.                         |
+| 73 | ws2812_gol.\write_bram_rec_cmd.                |
++----+------------------------------------------------+
+
+Select a module from which you would like to analyze signals: 69
+
+------ \ram_to_bit.aserial. signals ------
++---+-----------------+-------+----------+
+| # | name            | range | selected |
++---+-----------------+-------+----------+
+| 1 | clk             |   1   |    []    |
+| 2 | data_in         |   1   |    []    |
+| 3 | data_out        |   1   |    []    |
+| 4 | reset           |   1   |    []    |
+| 5 | run             |   1   |    []    |
+| 6 | vclk_count_curr | [3:0] |    []    |
+| 7 | vcount          | [3:0] |    []    |
+| 8 | vrun            |   1   |    []    |
+| 9 | wnr             |   1   |    []    |
++---+-----------------+-------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 108 (max. 1180)                           #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 3
+------ \ram_to_bit.aserial. signals ------
++---+-----------------+-------+----------+
+| # | name            | range | selected |
++---+-----------------+-------+----------+
+| 1 | clk             |   1   |    []    |
+| 2 | data_in         |   1   |    []    |
+| 3 | data_out        |   1   |  ['A']   |
+| 4 | reset           |   1   |    []    |
+| 5 | run             |   1   |    []    |
+| 6 | vclk_count_curr | [3:0] |    []    |
+| 7 | vcount          | [3:0] |    []    |
+| 8 | vrun            |   1   |    []    |
+| 9 | wnr             |   1   |    []    |
++---+-----------------+-------+----------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
@@ -661,7 +834,30 @@ wire [7:0] ws2812_ram_addr_rd:
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 1175
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 5
+------ \ram_to_bit.aserial. signals ------
++---+-----------------+-------+----------+
+| # | name            | range | selected |
++---+-----------------+-------+----------+
+| 1 | clk             |   1   |    []    |
+| 2 | data_in         |   1   |    []    |
+| 3 | data_out        |   1   |  ['A']   |
+| 4 | reset           |   1   |    []    |
+| 5 | run             |   1   |  ['A']   |
+| 6 | vclk_count_curr | [3:0] |    []    |
+| 7 | vcount          | [3:0] |    []    |
+| 8 | vrun            |   1   |    []    |
+| 9 | wnr             |   1   |    []    |
++---+-----------------+-------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 110 (max. 1180)                           #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): f
 
 -------------------------------------- ws2812_gol ---------------------------------------
 +------+----------------------+---------+--------------------+--------------------------+
@@ -691,7 +887,9 @@ Which signals should be analyzed (0 = finish)? 1175
 ...
 | 1171 | ws2812_ram_addr_rd   |  [7:0]  |       ['A']        | \ram_to_bit.             |
 ...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
+| 1175 | data_out             |    1    |       ['A']        | \ram_to_bit.aserial.     |
+| 1176 | reset                |    1    |         []         | \ram_to_bit.aserial.   |
+| 1177 | run                  |    1    |       ['A']        | \ram_to_bit.aserial.   |
 ...
 | 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
 | 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
@@ -704,18 +902,6 @@ Which signals should be analyzed (0 = finish)? 1175
 #############################################
 
 Which signals should be analyzed (0 = finish)? 0
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                                !
-! The sampling frequency determines the rate at which signals are captured.      !
-! When choosing the frequency, consider:                                         !
-!  - At a minimum, twice the highest frequency of the DUT. (recommended: thrice) !
-!  - Harmonious with the frequency of the DUT (an integral multiple larger).     !
-! Recommended max. sampling frequency up to 160MHz.                              !
-!                                                                                !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-Choose a sampling frequency (greater than 0, float, in MHz): 40
 
 !!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!
 !                                           !
@@ -731,50 +917,46 @@ Please choose one of the following durations:
 +---+---------+---------------+
 | # | smp_cnt | duration [us] |
 +---+---------+---------------+
-| 1 |       8 |           0.2 |
-| 2 |      24 |           0.6 |
-| 3 |      56 |           1.4 |
-| 4 |     120 |           3.0 |
-| 5 |     248 |           6.2 |
-| 6 |     504 |          12.6 |
-| 7 |    1016 |          25.4 |
-| 8 |    2040 |          51.0 |
-| 9 |    4088 |         102.2 |
+| 1 |      23 |           2.3 |
+| 2 |      55 |           5.5 |
+| 3 |     119 |          11.9 |
+| 4 |     247 |          24.7 |
+| 5 |     503 |          50.3 |
+| 6 |    1015 |         101.5 |
+| 7 |    2039 |         203.9 |
 +---+---------+---------------+
 
-Capture duration before trigger activation (choose between 1 and 9): 1
+Capture duration before trigger activation (choose between 1 and 7): 1
 
-####### Capture duration before Trigger #######
-#                                             #
-# Sample count = 8                            #
-# Capture duration = 0.2 us                   #
-#                                             #
-###############################################
+###### Capture duration before Trigger ######
+#                                           #
+# Sample count = 23                         #
+# Capture duration = 2.3 us                 #
+#                                           #
+#############################################
 
 Please choose one of the following durations:
-+----+---------+---------------+
-|  # | smp_cnt | duration [us] |
-+----+---------+---------------+
-|  1 |       8 |           0.2 |
-|  2 |      24 |           0.6 |
-|  3 |      56 |           1.4 |
-|  4 |     120 |           3.0 |
-|  5 |     248 |           6.2 |
-|  6 |     504 |          12.6 |
-|  7 |    1016 |          25.4 |
-|  8 |    2040 |          51.0 |
-|  9 |    4088 |         102.2 |
-| 10 |    8184 |         204.6 |
-+----+---------+---------------+
++---+---------+---------------+
+| # | smp_cnt | duration [us] |
++---+---------+---------------+
+| 1 |      41 |           4.1 |
+| 2 |     105 |          10.5 |
+| 3 |     233 |          23.3 |
+| 4 |     489 |          48.9 |
+| 5 |    1001 |         100.1 |
+| 6 |    2025 |         202.5 |
+| 7 |    4073 |         407.3 |
+| 8 |    8169 |         816.9 |
++---+---------+---------------+
 
-Capture duration after trigger activation (choose between 1 and 10): 10
+Capture duration after trigger activation (choose between 1 and 8): 8
 
-####### Capture duration after Trigger ########
-#                                             #
-# Sample count = 8184                         #
-# Capture duration = 204.6 us                 #
-#                                             #
-###############################################
+###### Capture duration after Trigger #######
+#                                           #
+# Sample count = 8169                       #
+# Capture duration = 816.9 us               #
+#                                           #
+#############################################
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -790,37 +972,14 @@ Capture duration after trigger activation (choose between 1 and 10): 10
 !                                                                         !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Would you like me to implement the function for comparing bit patterns? (y/N): n
 
-###### Signals under test ######
-#                             #
-#  clk                        #
-#  gol_init                   #
-#  gol_next_gen               #
-#  [88:81] life_out           #
-#  [78:71] life_out           #
-#  [68:61] life_out           #
-#  [58:51] life_out           #
-#  [48:41] life_out           #
-#  [38:31] life_out           #
-#  [28:21] life_out           #
-#  [18:11] life_out           #
-#  [1:0] rgb_color            #
-#  [7:0] shift_life_row       #
-#  [7:0] ws2812_ram_addr_wr   #
-#  [7:0] ws2812_rgb_byte_reg  #
-#  [7:0] shift_rgb_byte       #
-#  [7:0] ws2812_ram_addr_rd   #
-#  data_out                   #
-#                             #
-###############################
+Would you like me to implement the function for comparing bit patterns? (y/N): 
 
 Execute Synthesis...
 Output permanently saved to: C:\Users\df\gatemate_ila/log/yosys.log
 
 Execute Implementation...
 Output permanently saved to: C:\Users\df\gatemate_ila/log/impl.log
-
 
 #################### Configuration File ####################
 #                                                          #
@@ -832,135 +991,139 @@ Upload to FPGA Board...
 
 ############ CONFIGURATION NOTE #############
 #                                           #
-# Trigger at sample no.: 8                  #
-# Defined analysis frequency: 40000000 Hz   #
+# Trigger at sample no.: 23                 #
+# Defined analysis frequency: 10000000 Hz   #
 #                                           #
 #############################################
 
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-|   2 | \ram_to_bit.ws2812_ram_addr_rd[1] |
-|   3 | \ram_to_bit.ws2812_ram_addr_rd[2] |
-|   4 | \ram_to_bit.ws2812_ram_addr_rd[3] |
-|   5 | \ram_to_bit.ws2812_ram_addr_rd[4] |
-|   6 | \ram_to_bit.ws2812_ram_addr_rd[5] |
-|   7 | \ram_to_bit.ws2812_ram_addr_rd[6] |
-|   8 | \ram_to_bit.ws2812_ram_addr_rd[7] |
-|   9 |     \ram_to_bit.shift_rgb_byte[0] |
-|  10 |     \ram_to_bit.shift_rgb_byte[1] |
-|  11 |     \ram_to_bit.shift_rgb_byte[2] |
-|  12 |     \ram_to_bit.shift_rgb_byte[3] |
-|  13 |     \ram_to_bit.shift_rgb_byte[4] |
-|  14 |     \ram_to_bit.shift_rgb_byte[5] |
-|  15 |     \ram_to_bit.shift_rgb_byte[6] |
-|  16 |     \ram_to_bit.shift_rgb_byte[7] |
-|  17 |    \golx64.ws2812_rgb_byte_reg[0] |
-|  18 |    \golx64.ws2812_rgb_byte_reg[1] |
-|  19 |    \golx64.ws2812_rgb_byte_reg[2] |
-|  20 |    \golx64.ws2812_rgb_byte_reg[3] |
-|  21 |    \golx64.ws2812_rgb_byte_reg[4] |
-|  22 |    \golx64.ws2812_rgb_byte_reg[5] |
-|  23 |    \golx64.ws2812_rgb_byte_reg[6] |
-|  24 |    \golx64.ws2812_rgb_byte_reg[7] |
-|  25 |     \golx64.ws2812_ram_addr_wr[0] |
-|  26 |     \golx64.ws2812_ram_addr_wr[1] |
-|  27 |     \golx64.ws2812_ram_addr_wr[2] |
-|  28 |     \golx64.ws2812_ram_addr_wr[3] |
-|  29 |     \golx64.ws2812_ram_addr_wr[4] |
-|  30 |     \golx64.ws2812_ram_addr_wr[5] |
-|  31 |     \golx64.ws2812_ram_addr_wr[6] |
-|  32 |     \golx64.ws2812_ram_addr_wr[7] |
-|  33 |         \golx64.shift_life_row[0] |
-|  34 |         \golx64.shift_life_row[1] |
-|  35 |         \golx64.shift_life_row[2] |
-|  36 |         \golx64.shift_life_row[3] |
-|  37 |         \golx64.shift_life_row[4] |
-|  38 |         \golx64.shift_life_row[5] |
-|  39 |         \golx64.shift_life_row[6] |
-|  40 |         \golx64.shift_life_row[7] |
-|  41 |              \golx64.rgb_color[0] |
-|  42 |              \golx64.rgb_color[1] |
-|  43 |         \golx64.life_out_18_11[0] |
-|  44 |         \golx64.life_out_18_11[1] |
-|  45 |         \golx64.life_out_18_11[2] |
-|  46 |         \golx64.life_out_18_11[3] |
-|  47 |         \golx64.life_out_18_11[4] |
-|  48 |         \golx64.life_out_18_11[5] |
-|  49 |         \golx64.life_out_18_11[6] |
-|  50 |         \golx64.life_out_18_11[7] |
-|  51 |         \golx64.life_out_28_21[0] |
-|  52 |         \golx64.life_out_28_21[1] |
-|  53 |         \golx64.life_out_28_21[2] |
-|  54 |         \golx64.life_out_28_21[3] |
-|  55 |         \golx64.life_out_28_21[4] |
-|  56 |         \golx64.life_out_28_21[5] |
-|  57 |         \golx64.life_out_28_21[6] |
-|  58 |         \golx64.life_out_28_21[7] |
-|  59 |         \golx64.life_out_38_31[0] |
-|  60 |         \golx64.life_out_38_31[1] |
-|  61 |         \golx64.life_out_38_31[2] |
-|  62 |         \golx64.life_out_38_31[3] |
-|  63 |         \golx64.life_out_38_31[4] |
-|  64 |         \golx64.life_out_38_31[5] |
-|  65 |         \golx64.life_out_38_31[6] |
-|  66 |         \golx64.life_out_38_31[7] |
-|  67 |         \golx64.life_out_48_41[0] |
-|  68 |         \golx64.life_out_48_41[1] |
-|  69 |         \golx64.life_out_48_41[2] |
-|  70 |         \golx64.life_out_48_41[3] |
-|  71 |         \golx64.life_out_48_41[4] |
-|  72 |         \golx64.life_out_48_41[5] |
-|  73 |         \golx64.life_out_48_41[6] |
-|  74 |         \golx64.life_out_48_41[7] |
-|  75 |         \golx64.life_out_58_51[0] |
-|  76 |         \golx64.life_out_58_51[1] |
-|  77 |         \golx64.life_out_58_51[2] |
-|  78 |         \golx64.life_out_58_51[3] |
-|  79 |         \golx64.life_out_58_51[4] |
-|  80 |         \golx64.life_out_58_51[5] |
-|  81 |         \golx64.life_out_58_51[6] |
-|  82 |         \golx64.life_out_58_51[7] |
-|  83 |         \golx64.life_out_68_61[0] |
-|  84 |         \golx64.life_out_68_61[1] |
-|  85 |         \golx64.life_out_68_61[2] |
-|  86 |         \golx64.life_out_68_61[3] |
-|  87 |         \golx64.life_out_68_61[4] |
-|  88 |         \golx64.life_out_68_61[5] |
-|  89 |         \golx64.life_out_68_61[6] |
-|  90 |         \golx64.life_out_68_61[7] |
-|  91 |         \golx64.life_out_78_71[0] |
-|  92 |         \golx64.life_out_78_71[1] |
-|  93 |         \golx64.life_out_78_71[2] |
-|  94 |         \golx64.life_out_78_71[3] |
-|  95 |         \golx64.life_out_78_71[4] |
-|  96 |         \golx64.life_out_78_71[5] |
-|  97 |         \golx64.life_out_78_71[6] |
-|  98 |         \golx64.life_out_78_71[7] |
-|  99 |         \golx64.life_out_88_81[0] |
-| 100 |         \golx64.life_out_88_81[1] |
-| 101 |         \golx64.life_out_88_81[2] |
-| 102 |         \golx64.life_out_88_81[3] |
-| 103 |         \golx64.life_out_88_81[4] |
-| 104 |         \golx64.life_out_88_81[5] |
-| 105 |         \golx64.life_out_88_81[6] |
-| 106 |         \golx64.life_out_88_81[7] |
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
 
-########### current ILA runtime configuration ##########
-#                                                      #
-# Number of iterations: 1                              #
-#   Iteration Number: 1                                #
-#     trigger activation: falling edge                 #
-#     trigger signal:     \ram_to_bit.aserial.data_out #
-#                                                      #
-########################################################
+######## current ILA runtime configuration ########
+#                                                 #
+# Number of sequences: 1                          #
+#                                                 #
+#  Sequences Number: 1                            #
+#     trigger activation: falling edge            #
+#     trigger signal:     \ram_to_bit.aserial.run #
+#                                                 #
+###################################################
+
+
 
 0 -- exit
 1 -- change Trigger
@@ -989,15 +1152,121 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
 Trigger signal? in range [0-109]: 108
 
@@ -1008,18 +1277,123 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
-Trigger signal? in range [0-109]: 107
+Trigger signal? in range [0-109]: 108
 
 ###  sequence nr. 3: ###
 
@@ -1028,18 +1402,123 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
-Trigger signal? in range [0-109]: 107
+Trigger signal? in range [0-109]: 108
 
 ###  sequence nr. 4: ###
 
@@ -1048,18 +1527,123 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
-Trigger signal? in range [0-109]: 107
+Trigger signal? in range [0-109]: 108
 
 ###  sequence nr. 5: ###
 
@@ -1068,18 +1652,123 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
-Trigger signal? in range [0-109]: 107
+Trigger signal? in range [0-109]: 108
 
 ###  sequence nr. 6: ###
 
@@ -1088,28 +1777,238 @@ All possible Trigger activations:
 1:      rising edge
 
 Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
-Trigger signal? in range [0-109]: 107
+Trigger signal? in range [0-109]: 108
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
 
 ####### current ILA runtime configuration ######
@@ -1118,19 +2017,24 @@ Trigger signal? in range [0-109]: 107
 #                                              #
 #  Sequences Number: 1                         #
 #     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_init     #
+#     trigger signal:     \golx64.gol_next_gen #
+#                                              #
 #  Sequences Number: 2                         #
 #     trigger activation: rising edge          #
 #     trigger signal:     \golx64.gol_next_gen #
+#                                              #
 #  Sequences Number: 3                         #
 #     trigger activation: rising edge          #
 #     trigger signal:     \golx64.gol_next_gen #
+#                                              #
 #  Sequences Number: 4                         #
 #     trigger activation: rising edge          #
 #     trigger signal:     \golx64.gol_next_gen #
+#                                              #
 #  Sequences Number: 5                         #
 #     trigger activation: rising edge          #
 #     trigger signal:     \golx64.gol_next_gen #
+#                                              #
 #  Sequences Number: 6                         #
 #     trigger activation: rising edge          #
 #     trigger signal:     \golx64.gol_next_gen #
@@ -1146,17 +2050,121 @@ Trigger signal? in range [0-109]: 107
 4 -- reset DUT (hold the DUT in reset until the capture starts)
 
 Enter your choice: 4
-Trigger activation? in range [0-1]: 1
+
 --------------- All Signals ---------------
 +-----+-----------------------------------+
-|   # |                Name               |
+|   # |                              Name |
 +-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
+|   0 |           \ram_to_bit.aserial.run |
+|   1 |      \ram_to_bit.aserial.data_out |
+|   2 | \ram_to_bit.ws2812_ram_addr_rd[0] |
+|   3 | \ram_to_bit.ws2812_ram_addr_rd[1] |
+|   4 | \ram_to_bit.ws2812_ram_addr_rd[2] |
+|   5 | \ram_to_bit.ws2812_ram_addr_rd[3] |
+|   6 | \ram_to_bit.ws2812_ram_addr_rd[4] |
+|   7 | \ram_to_bit.ws2812_ram_addr_rd[5] |
+|   8 | \ram_to_bit.ws2812_ram_addr_rd[6] |
+|   9 | \ram_to_bit.ws2812_ram_addr_rd[7] |
+|  10 |     \ram_to_bit.shift_rgb_byte[0] |
+|  11 |     \ram_to_bit.shift_rgb_byte[1] |
+|  12 |     \ram_to_bit.shift_rgb_byte[2] |
+|  13 |     \ram_to_bit.shift_rgb_byte[3] |
+|  14 |     \ram_to_bit.shift_rgb_byte[4] |
+|  15 |     \ram_to_bit.shift_rgb_byte[5] |
+|  16 |     \ram_to_bit.shift_rgb_byte[6] |
+|  17 |     \ram_to_bit.shift_rgb_byte[7] |
+|  18 |    \golx64.ws2812_rgb_byte_reg[0] |
+|  19 |    \golx64.ws2812_rgb_byte_reg[1] |
+|  20 |    \golx64.ws2812_rgb_byte_reg[2] |
+|  21 |    \golx64.ws2812_rgb_byte_reg[3] |
+|  22 |    \golx64.ws2812_rgb_byte_reg[4] |
+|  23 |    \golx64.ws2812_rgb_byte_reg[5] |
+|  24 |    \golx64.ws2812_rgb_byte_reg[6] |
+|  25 |    \golx64.ws2812_rgb_byte_reg[7] |
+|  26 |     \golx64.ws2812_ram_addr_wr[0] |
+|  27 |     \golx64.ws2812_ram_addr_wr[1] |
+|  28 |     \golx64.ws2812_ram_addr_wr[2] |
+|  29 |     \golx64.ws2812_ram_addr_wr[3] |
+|  30 |     \golx64.ws2812_ram_addr_wr[4] |
+|  31 |     \golx64.ws2812_ram_addr_wr[5] |
+|  32 |     \golx64.ws2812_ram_addr_wr[6] |
+|  33 |     \golx64.ws2812_ram_addr_wr[7] |
+|  34 |         \golx64.shift_life_row[0] |
+|  35 |         \golx64.shift_life_row[1] |
+|  36 |         \golx64.shift_life_row[2] |
+|  37 |         \golx64.shift_life_row[3] |
+|  38 |         \golx64.shift_life_row[4] |
+|  39 |         \golx64.shift_life_row[5] |
+|  40 |         \golx64.shift_life_row[6] |
+|  41 |         \golx64.shift_life_row[7] |
+|  42 |              \golx64.rgb_color[0] |
+|  43 |              \golx64.rgb_color[1] |
+|  44 |         \golx64.life_out_18_11[0] |
+|  45 |         \golx64.life_out_18_11[1] |
+|  46 |         \golx64.life_out_18_11[2] |
+|  47 |         \golx64.life_out_18_11[3] |
+|  48 |         \golx64.life_out_18_11[4] |
+|  49 |         \golx64.life_out_18_11[5] |
+|  50 |         \golx64.life_out_18_11[6] |
+|  51 |         \golx64.life_out_18_11[7] |
+|  52 |         \golx64.life_out_28_21[0] |
+|  53 |         \golx64.life_out_28_21[1] |
+|  54 |         \golx64.life_out_28_21[2] |
+|  55 |         \golx64.life_out_28_21[3] |
+|  56 |         \golx64.life_out_28_21[4] |
+|  57 |         \golx64.life_out_28_21[5] |
+|  58 |         \golx64.life_out_28_21[6] |
+|  59 |         \golx64.life_out_28_21[7] |
+|  60 |         \golx64.life_out_38_31[0] |
+|  61 |         \golx64.life_out_38_31[1] |
+|  62 |         \golx64.life_out_38_31[2] |
+|  63 |         \golx64.life_out_38_31[3] |
+|  64 |         \golx64.life_out_38_31[4] |
+|  65 |         \golx64.life_out_38_31[5] |
+|  66 |         \golx64.life_out_38_31[6] |
+|  67 |         \golx64.life_out_38_31[7] |
+|  68 |         \golx64.life_out_48_41[0] |
+|  69 |         \golx64.life_out_48_41[1] |
+|  70 |         \golx64.life_out_48_41[2] |
+|  71 |         \golx64.life_out_48_41[3] |
+|  72 |         \golx64.life_out_48_41[4] |
+|  73 |         \golx64.life_out_48_41[5] |
+|  74 |         \golx64.life_out_48_41[6] |
+|  75 |         \golx64.life_out_48_41[7] |
+|  76 |         \golx64.life_out_58_51[0] |
+|  77 |         \golx64.life_out_58_51[1] |
+|  78 |         \golx64.life_out_58_51[2] |
+|  79 |         \golx64.life_out_58_51[3] |
+|  80 |         \golx64.life_out_58_51[4] |
+|  81 |         \golx64.life_out_58_51[5] |
+|  82 |         \golx64.life_out_58_51[6] |
+|  83 |         \golx64.life_out_58_51[7] |
+|  84 |         \golx64.life_out_68_61[0] |
+|  85 |         \golx64.life_out_68_61[1] |
+|  86 |         \golx64.life_out_68_61[2] |
+|  87 |         \golx64.life_out_68_61[3] |
+|  88 |         \golx64.life_out_68_61[4] |
+|  89 |         \golx64.life_out_68_61[5] |
+|  90 |         \golx64.life_out_68_61[6] |
+|  91 |         \golx64.life_out_68_61[7] |
+|  92 |         \golx64.life_out_78_71[0] |
+|  93 |         \golx64.life_out_78_71[1] |
+|  94 |         \golx64.life_out_78_71[2] |
+|  95 |         \golx64.life_out_78_71[3] |
+|  96 |         \golx64.life_out_78_71[4] |
+|  97 |         \golx64.life_out_78_71[5] |
+|  98 |         \golx64.life_out_78_71[6] |
+|  99 |         \golx64.life_out_78_71[7] |
+| 100 |         \golx64.life_out_88_81[0] |
+| 101 |         \golx64.life_out_88_81[1] |
+| 102 |         \golx64.life_out_88_81[2] |
+| 103 |         \golx64.life_out_88_81[3] |
+| 104 |         \golx64.life_out_88_81[4] |
+| 105 |         \golx64.life_out_88_81[5] |
+| 106 |         \golx64.life_out_88_81[6] |
+| 107 |         \golx64.life_out_88_81[7] |
+| 108 |              \golx64.gol_next_gen |
+| 109 |                  \golx64.gol_init |
 +-----+-----------------------------------+
 
 ####### current ILA runtime configuration ######
@@ -1165,7 +2173,7 @@ Trigger activation? in range [0-1]: 1
 #                                              #
 #  Sequences Number: 1                         #
 #     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_init     #
+#     trigger signal:     \golx64.gol_next_gen #
 #                                              #
 #  Sequences Number: 2                         #
 #     trigger activation: rising edge          #
@@ -1188,6 +2196,8 @@ Trigger activation? in range [0-1]: 1
 #     trigger signal:     \golx64.gol_next_gen #
 #                                              #
 ################################################
+
+
 
 0 -- exit
 1 -- change Trigger
@@ -1204,109 +2214,58 @@ Enter your choice: 2
 #################################################
 
 
-####################Duration between captures####################
+################### Duration between captures ###################
 #                                                               #
-# Duration between start and first trigger: 0.000338 s          #
-# Duration until the next triggering of the trigger: 0.936452 s #
-# Duration until the next triggering of the trigger: 0.936448 s #
-# Duration until the next triggering of the trigger: 0.9364 s   #
-# Duration until the next triggering of the trigger: 0.936403 s #
-# Duration until the next triggering of the trigger: 0.936377 s #
+# Duration between start and first trigger: 1.002873 s          #
+# Duration until the next triggering of the trigger: 0.905693 s #
+# Duration until the next triggering of the trigger: 0.905247 s #
+# Duration until the next triggering of the trigger: 0.905461 s #
+# Duration until the next triggering of the trigger: 0.905566 s #
+# Duration until the next triggering of the trigger: 0.90548 s  #
 #                                                               #
 #################################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_0.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_0.vcd #
 #                                                  #
 ####################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_1.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_1.vcd #
 #                                                  #
 ####################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_2.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_2.vcd #
 #                                                  #
 ####################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_3.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_3.vcd #
 #                                                  #
 ####################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_4.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_4.vcd #
 #                                                  #
 ####################################################
 
 
 ################## create vcd file #################
 #                                                  #
-# vcd_files/ila_ws2812_gol_23-12-03_10-47-03_5.vcd #
+# vcd_files/ila_ws2812_gol_24-01-12_14-58-35_5.vcd #
 #                                                  #
 ####################################################
 
 
 Press Enter to continue
-
-Trigger activation? in range [0-1]: 1
---------------- All Signals ---------------
-+-----+-----------------------------------+
-|   # |                Name               |
-+-----+-----------------------------------+
-|   0 |      \ram_to_bit.aserial.data_out |
-|   1 | \ram_to_bit.ws2812_ram_addr_rd[0] |
-...
-| 107 |              \golx64.gol_next_gen |
-| 108 |                  \golx64.gol_init |
-| 109 |                               clk |
-+-----+-----------------------------------+
-
-####### current ILA runtime configuration ######
-#                                              #
-# Number of sequences: 6                       #
-#                                              #
-#  Sequences Number: 1                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_init     #
-#                                              #
-#  Sequences Number: 2                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_next_gen #
-#                                              #
-#  Sequences Number: 3                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_next_gen #
-#                                              #
-#  Sequences Number: 4                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_next_gen #
-#                                              #
-#  Sequences Number: 5                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_next_gen #
-#                                              #
-#  Sequences Number: 6                         #
-#     trigger activation: rising edge          #
-#     trigger signal:     \golx64.gol_next_gen #
-#                                              #
-################################################
-
-0 -- exit
-1 -- change Trigger
-2 -- start capture
-3 -- reset ILA (resets the config of the ILA)
-4 -- reset DUT (hold the DUT in reset until the capture starts)
-
-Enter your choice:

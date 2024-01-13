@@ -204,41 +204,10 @@ REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
 
 When customising the call, please note that the software places the vcd file in the call between the `REPRESENTATION_SOFTWARE` and the `REPRESENTATION_FLAGS`.
 
-## Basic ILA setup
 
-### Access to external software
+### Note for use in wsl 
 
-The ILAcop has to execute the toolchain applications and GTKWave. 
-
-If you haven't already done so, install the GateMate FPGA toolchain to transfer your design to the GateMate FPGA. You can follow the [Toolchain Installation User Guide.](https://www.colognechip.com/docs/ug1002-toolchain-install-latest.pdf)
-
-The ILAcop must be able to call the execution files from the system path. Ensure that your system can recognize
-the following application calls from the system path by using the command line interface:
-<pre>
-$ > yosys
-$ > p_r
-$ > openFPGALoader
-$ > gtkwave
-</pre>
-If a command is not found, its path must be entered in the system settings.
-
-Alternatively, you can add the absolute PATH of the respective program to be executed in the `app/config.py` file. This ILA setup file contains some main
-settings.
-
-For example, the file could be changed as follows:
-<pre>
-YOSYS = '/home/dave/cc-toolchain-linux/bin/yosys/yosys'
-YOSYS_FLAGS = '-nomx8'
-PR = '/home/dave/cc-toolchain-linux/bin/p_r/p_r'
-PR_FLAGS = '-cCP +uCIO' # The +uCIO flag must not be removed. The ccf file is automatically appended
-UPLOAD = '/home/dave/cc-toolchain-linux/bin/openFPGALoader/openFPGALoader'
-UPLOAD_FLAGS = ' -b gatemate_evb_spi -f --verify '
-REPRESENTATION_SOFTWARE = '/home/dave/gtkwave/bin/gtkwave'
-REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
-CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm' 
-CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1'
-</pre>
-
+To effectively utilize the ILA (Integrated Logic Analyzer) software within the Windows Subsystem for Linux (WSL), it is recommended to use Linux-compatible tools exclusively. This ensures seamless operation and compatibility within the WSL environment. Additionally, it's important to have the FTDI (Future Technology Devices International) connection available in WSL. This can be achieved by using the USBIPD-WIN project, which enables USB device sharing between Windows and WSL. For detailed instructions on setting this up, please refer to the official documentation at https://learn.microsoft.com/de-de/windows/wsl/connect-usb. This guide provides essential information on connecting USB devices to WSL, ensuring full functionality of the ILA software in this environment.
 
 ### Define Linux access rules for USB
 
@@ -279,8 +248,59 @@ To ensure your Python program or the PyFTDI library has access to USB-Serial dev
 This should set the permissions for your USB-Serial device, allowing your Python program and the PyFTDI library to access it.
   
 
+## Basic ILA setup
 
-## Hardware setup
+The ILA is by default set up for use with the evaluation board from Cologne Chip. If you are using different hardware, such as the GateMate Programmer, you will need to modify some basic ILA settings. 
+
+In the app/config.py file, you can configure settings for the toolchain and hardware being used.
+
+### Access to external software
+
+The ILAcop has to execute the toolchain applications and GTKWave. 
+
+If you haven't already done so, install the GateMate FPGA toolchain to transfer your design to the GateMate FPGA. You can follow the [Toolchain Installation User Guide.](https://www.colognechip.com/docs/ug1002-toolchain-install-latest.pdf)
+
+The ILAcop must be able to call the execution files from the system path. Ensure that your system can recognize
+the following application calls from the system path by using the command line interface:
+<pre>
+$ > yosys
+$ > p_r
+$ > openFPGALoader
+$ > gtkwave
+</pre>
+If a command is not found, its path must be entered in the system settings.
+
+Alternatively, you can add the absolute PATH of the respective program to be executed in the `app/config.py` file. This ILA setup file contains some main
+settings.
+
+For example, the file could be changed as follows:
+<pre>
+YOSYS = '/home/dave/cc-toolchain-linux/bin/yosys/yosys'
+YOSYS_FLAGS = '-nomx8'
+PR = '/home/dave/cc-toolchain-linux/bin/p_r/p_r'
+PR_FLAGS = '-cCP +uCIO' # The +uCIO flag must not be removed. The ccf file is automatically appended
+UPLOAD = '/home/dave/cc-toolchain-linux/bin/openFPGALoader/openFPGALoader'
+UPLOAD_FLAGS = ' -b gatemate_evb_spi -f --verify '
+REPRESENTATION_SOFTWARE = '/home/dave/gtkwave/bin/gtkwave'
+REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
+CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm' 
+CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1'
+</pre>
+
+You can also set flags for `yosys` and `p\_r` in the *config.py* file.
+<pre>
+YOSYS = 'yosys'
+YOSYS_FLAGS = '-nomx8'
+PR = 'p_r'
+PR_FLAGS = '-cCP +uCIO' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
+</pre> 
+
+The command `+uCIO` switches the configuration GPIO bank of the FPGAS so that these can be used as normal user IOs. This is necessary for the ILA to be able to communicate via the same connection as it was configured.
+
+If you have selected other IOs for the SPI communication of the ILA gateware, the '+uCIO' flag can also be omitted.
+
+
+### Setting Up Communication with External Hardware
 
 The software for the configuration of the GateMate FPGA, as well as the respective programming mode, can be customised in `app/config.py` under the following constants:
 
@@ -337,24 +357,10 @@ Available interfaces:
 
 In this case, the dual port FTDI of the GateMate evaluation board is displayed.
 
-You can also set flags for `yosys` and `p\_r` in the *config.py* file.
-<pre>
-YOSYS = 'yosys'
-YOSYS_FLAGS = '-nomx8'
-PR = 'p_r'
-PR_FLAGS = '-cCP +uCIO' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
-</pre> 
-
-The command `+uCIO` switches the configuration GPIO bank of the FPGAS so that these can be used as normal user IOs. This is necessary for the ILA to be able to communicate via the same connection as it was configured.
-
-If you have selected other IOs for the SPI communication of the ILA gateware, the '+uCIO' flag can also be omitted.
-
 If you want to change the SPI frequency for the communication of the ILA, you need to modify the following line in the `app/config.py` file:
 <pre>
 freq_max = 10000000   
 </pre>
-
-
 
 
 ## ILA functionality
@@ -389,7 +395,9 @@ If this function is activated, more hardware is required for the ILA gateware an
 
 The user can select more than 1000 bits from the signals in the DUT to be analyzed, depending on the RAMs in use by the DUT.
 
-These can be individual signals or signal vectors.
+The ILAcop tool automatically identifies the signals from the specified Device Under Test (DUT). Users simply need to select the signals under test from a provided table. Additionally, it is possible to filter the signals based on the modules in which they are found.
+
+The Signals can be individual signals or signal vectors.
 It is also possible to select only partial sections of signal vectors. All selected signals are combined in a sample.
 
 To select a specific range of a vector, specify two natural numbers representing the bit positions. These numbers must lie within the valid range of the vector. The order in which you specify these numbers should correspond to the vector's definition. For instance, if the vector is defined as `a[15:0]`, select the range with the higher value first, e.g., `10:3`. For a vector like `b[0:15]`, the order would be reversed, e.g., `3:10`. Choose your indices in accordance with the vector's definition:
@@ -399,12 +407,17 @@ Individual signals are simply indicated with the respective index. Several indiv
 For example: `12, 10:8, 4, 2:0`.
 
 ### Frequency analysis
-The sampling frequency defines the delay between the stored samples.
 
-- The sampling frequency is recommend up to 160MHz.
-- It is recommended that the sampling frequency be equal to or an integer multiple of the frequency at which the signals under test change their state.
+The sampling frequency determines the delay between stored samples. For analysis frequency, a user can choose a clock signal generated by a PLL from the DUT, an external clock signal, or instantiate an additional PLL using an external clock signal with a frequency freely selected by the user.
 
-Please note: The higher the sampling frequency, the shorter the period of time that can be captured in a single shot because the random-access memory (RAM) fills up more quickly
+ILAcop automatically identifies all PLLs instantiated in the design and displays them along with their output frequencies and signals. Users can choose from the three options defined above. ILAcop also automatically detects external clocks. Usually, the same clk signal that clocks the tested signals suffices.
+
+If you wish to instantiate an additional PLL, please consider the following guidelines:
+
+- The sampling frequency is recommended to be up to 140MHz, depending on the configuration and the total hardware in use.
+- It is advisable for the sampling frequency to be equal to or an integer multiple of the frequency at which the signals under test change their state.
+
+Please note: The higher the sampling frequency, the shorter the time period that can be captured in a single shot, as the random-access memory (RAM) fills up more quickly.
 
 ### Capture duration
 During the ILA's capture process, the samples are stored to the internal block RAMs of the GateMate FPGA for each clock period of the analysis frequency. 
@@ -425,6 +438,14 @@ This parameter sets the capture duration before the trigger is activated.
 This parameter sets the capture duration after the trigger is activated.
 
 
+### User controllable reset
+
+The ILAcop allows for control of a reset signal from the DUT (Device Under Test). This enables manual activation or deactivation of the reset. When the user initiates the capture process, the reset is automatically deactivated. This feature allows users to analyze the start process of the DUT immediately after a reset.
+
+Attention: The ILA treats the signal as active LOW.
+
+For the reset signal, users can either utilize an external reset signal or the output signal from the CC_USR_RSTN primitive in their design. The functionality of the CC_USR_RSTN primitive remains intact
+
 ## Usage
 
 ### ILAcop parameters and options
@@ -435,40 +456,41 @@ Make sure the program has rights to access the USB port the FPGA is connected to
 
 With the following command, you can get an overview of the parameters with which the program can be called:
 <pre>
-$ > python3 ILAcop.py --help
-usage: ILAcop.py [-h] [--version] [--clean] [--showdev] [-d [0, 1, 2, 3]] [-opt] [-wd WORK_DIR] {config,start,reconfig} ...
+gatemate_ila\app> python3 ILAcop.py --help
+usage: ILAcop.py [-h] [--version] [--clean] [--showdev] [-wd WORK_DIR] {config,start,reconfig} ...
 
-GateMate ILA User tool. With this script, you can configure and execute the ILA with a design under test (DUT).
+GateMate ILA control program. With this script, you can configure and execute the ILA with a design under test (DUT).
 
 options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
   --clean               Deletes all output files created by the program.
   --showdev             Outputs all found FTDI ports.
-  -d [0, 1, 2, 3]       Set the phase shift of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2).
-  -opt                  This optimizes the design by deleting all unused signals before signal evaluation.
   -wd WORK_DIR          Folder from which Yosys should be started for the synthesis of the Design Under Test.
 
 main_actions:
-  {config, start, reconfig}
+  {config,start,reconfig}
 
 example usage:
 python3 ILAcop.py [Commands]
 
 Commands:
   config:   Configure the ILA. the following options must be included:
-             -vlog:    Paths to the Verilog source code files.
-             -vhd:  Paths to the VHDL source code files.
-             -t:    Top level entity of the design under test.
-             -ccf:  Folder containing the .ccf file of the design under test.
-             -f:    Defines the external clock frequency (default is 10.0 MHz).
+             -vlog SOURCE    Paths to the Verilog source code files.
+             -vhd SOURCE     Paths to the VHDL source code files.
+             -t NAME         Top level entity of the design under test.
+             -ccf SOURCE     Folder containing the .ccf file of the design under test.
+             -f MHz          Defines the external clock frequency in MHz (default is 10.0 MHz).
+             -sync LEVEL     Number of register levels via which the SUT are synchronised.
+             -d DELAY        ILA PLL Phase shift of sampling frequency. 0=0°, 1=90°, 2=180°, 3=270° (default: 2).
+             -opt            Optimizes the design by deleting all unused signals before design evaluation.
           (optional) Subcommands config:
-                create_json: Creates a JSON file in which the logic analyzer can be configured.
+                -create_json: Creates a JSON file in which the logic analyzer can be configured.
             NOTE: Without the subcommand the configurations are requested step by step via the terminal.
 
-  reconfig: configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
+  reconfig: Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
 
-  start     starts the communication to the ILA with the last uploaded config
+  start     Starts the communication to the ILA with the last uploaded config
 
 </pre>
 
@@ -502,6 +524,9 @@ All files in directory vcd_files/ deleted.
 All files in directory config_design/ deleted.
 </pre>
 
+### Synchronise signals under test
+
+With the parameter '-sync LEVEL', you can set the number of registers through which all SUTs are synchronized before being transferred to the internal memory. Values greater than or equal to 0 are permitted. 
 
 ### Configuration with the interactive shell
 
@@ -536,6 +561,8 @@ $ > python3 ILAcop.py reconfig -l ila_config_name_year_month_day_hour_minute_sec
 </pre>
 
 If a reconfiguration is performed, the capture duration before and after trigger must be redefined, because the capture times may change due to changes in the signals and frequency to be analysed.
+More information about the JSON file in: [JSON File](#json-file).
+
 
 ### Restart control of the ILA on the FPGA at runtime
 The communication with the ILA can be restarted at any time after it has been terminated with the following command:
@@ -546,12 +573,13 @@ The user software remembers the last configuration of the FPGA, reconfigures the
 
 ### Example of configuration with the interactive shell
 
-This section provides step-by-step instructions on how to configure ILA with the interactive shell using the example design `ws2812_gol.vhd`. The design and a more detailed explanation of the design can be found in: [example_dut/ws2812_gol](example_dut/ws2812_gol)
+This section provides step-by-step instructions on configuring ILA using the interactive shell, illustrated with example outputs from the ILAcop interactive shell.
 
-First, the program displays the found constraints file, all source code files, and the ports of the top-level entity of the DUT.
+
+First, the program displays the found constraints file and all source code files from the DUT.
 
 <pre>
-gatemate_ila\app> python3 ILAcop.py config -vhd ..\example_dut\gol_image_test_vhdl\src -t ws2812_gol
+gatemate_ila\app> python3 ILAcop.py config -vhd ..\example_dut\ws2812_gol\src -t ws2812_gol
 
 ################ ccf File ##################
 #                                           #
@@ -575,6 +603,12 @@ gatemate_ila\app> python3 ILAcop.py config -vhd ..\example_dut\gol_image_test_vh
 #                                           #
 #############################################
 
+</pre>
+
+The DUT is analyzed by constructing it from the provided sources, enabling the identification of signals, PLLs, Block-RAMs, and the CC_USR_RSTN primitive. All detected elements are outputted to the interactive shell.
+
+<pre>
+
 Examine DUT ...
 
 
@@ -585,19 +619,45 @@ Examine DUT ...
 #                                           #
 #############################################
 
------ Ports DUT "ws2812_gol" ------
-+---+--------+-------+------------+
-| # |  type  | range |    Name    |
-+---+--------+-------+------------+
-| 0 | input  |   1   |    clk     |
-| 1 | input  |   1   |   i_mosi   |
-| 2 | input  |   1   |   i_sclk   |
-| 3 | input  |   1   |    i_ss    |
-| 4 | input  |   1   |   reset    |
-| 5 | output | [7:0] |    led     |
-| 6 | output |   1   |   o_miso   |
-| 7 | output |   1   | ws2812_out |
-+---+--------+-------+------------+
+
+############ Found PLL instance #############
+#                                           #
+# Pll name  = pll_inst_1                    #
+# Frequency = 12.5 MHz                      #
+# CLK0      = clk0_1                        #
+# CLK180    = clk180_1                      #
+# CLK270    = clk270_1                      #
+# CLK90     = clk90_1                       #
+#                                           #
+#############################################
+
+
+############# Found user reset ##############
+#                                           #
+# Reset signal name = rst                   #
+#                                           #
+#############################################
+
+</pre>
+
+Subsequently, the user is guided through the configuration of the ILA. Entering 'e' exits the process and generates a configurable JSON file for the specified DUT with all the configurations made, allowing the user to made configurations directly within the file and set up the ILA directly from the file. For more Information see [Reconfiguaration of the ILA using a JSON File](#reconfiguaration-of-the-ila-using-a-json-file).
+At any point, the user can enter 'p' for 'previous' to backtrack a step. Initially, the user must select a clock source for the DUT. Usually, the same clk signal that clocks the tested signals is sufficient.
+
+Typically, there are always two options available:
+
+1.  Use an external clk input signal.
+2.  Use an additional PLL with a freely selectable frequency (requires additional net of the global mesh).
+
+If the ILAcop detects a PLL in the DUT, a third option becomes available:
+3. Use a signal generated by a PLL from your design.
+
+If you use a clock signal that also clocks the signals under test, no additional net of the global mesh is needed.
+
+Attention! The GateMate A1 FPGA has four nets in its global mesh. If all four are already used by the DUT, one of these signals must be used for the ILA.
+
+Since each PLL has four output frequencies, if a user wants to choose a PLL for the ILA frequency from their own design, no additional global net is required only if the same signal used in the design is selected.
+
+<pre>
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                              !
@@ -609,53 +669,92 @@ Examine DUT ...
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                    !
-! The clk-source is crucial, as they also serve as the ILA's source. !
-! The ILA gateware expects a frequency of 10 MHz by default.         !
-! If the frequency deviates, change the input frequency value        !
-! with the -f parameter when starting the program.                   !
-!                                                                    !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                       !
+! In the following, a clock source for the ILA should be selected.      !
+! Usually, the same clk signal that clocks the tested signals suffices. !
+!                                                                       !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+Here are the possible ways to provide a clock to the ILA:
 
-############ CONFIGURATION NOTE #############
+ 1 = Use an external clk input signal.
+ 2 = Use an additional PLL with a freely selectable frequency (additional net of the global Mesh are required).
+ 3 = Use a signal generated by a PLL from your design.
+ 
+please choose between 1 and 3: 3
+
+########### PLL instances signals ###########
 #                                           #
-# clk source:    "clk"                      #
+# pll_inst_1: 12.5 Mhz                      #
+#                                           #
+#  0 = clk0_1                               #
+#  1 = clk180_1                             #
+#  2 = clk270_1                             #
+#  3 = clk90_1                              #
+#                                           #
+# pll_inst_2: 25.0 Mhz                      #
+#                                           #
+#  4 = clk0_2                               #
+#  5 = clk180_2                             #
+#  6 = clk270_2                             #
+#  7 = clk90_2                              #
+#                                           #
+# pll_inst_3: 50.0 Mhz                      #
+#                                           #
+#  8 = clk0_3                               #
+#  9 = clk180_3                             #
+#  10 = clk270_3                            #
+#  11 = clk90_3                             #
+#                                           #
+# pll_inst_4: 100.0 Mhz                     #
+#                                           #
+#  12 = clk0_4                              #
+#  13 = clk180_4                            #
+#  14 = clk270_4                            #
+#  15 = clk90_4                             #
+#                                           #
 #                                           #
 #############################################
 
-Do you want to change the clk source? (y:yes/N:no)
+
+Attention! If you choose an output signal of a PLL that you will not use in your design, an additional net of Global Mesh is required!
+
+Choose a clock signal: 12
+
 </pre>
-The DUT is examined by constructing it from the provided sources, allowing for the identification of the signals to be analyzed. Since ILAcop uses all block RAMs not used by DUT for storage, the block RAMs used by the DUT are also analyzed and output.
 
-Entering `e` will exit the process and create a JSON file for the given DUT, allowing configurations to be made directly within the file.
+If an additional PLL is instantiated, or if the user wishes to select an external clock signal as the analysis frequency, an external clock signal must be chosen. The program automatically attempts to find the DUT's clock input sources using keywords. The first input signal with `clk` or `clock` in its name is automatically set as the clk-source. This is to ensure the program has identified the correct signal as the clock source. If not, the user must press y and select the clock source from all found input ports of the top level DUT.
 
-Afterwards, you'll have the flexibility to refine the configurations within the generated JSON file and directly set up the ILA from it.
-
-With `p` for 'previous' you can go back one configuration step.
-
-Than the program automatically tries to find the clock Input sources of the DUT by using keywords. The first input signal within the keywords `'clk', 'clock'` in its name is automatically set as the clk-source. The first interaction with the user involves checking whether the program has identified the correct signal as the clock source. If not, the user must press `y` and select the clock source from all the ports listed above.
+Additionally, when a PLL is instantiated, the user is prompted to enter an analysis frequency.
 
 <pre>
+Here are the possible ways to provide a clock to the ILA:
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                !
-! The ILA can hold the DUT in reset until capture starts.        !
-! This makes it possible to capture the start process of the DUT !
-!                                                                !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 1 = Use an external clk input signal.
+ 2 = Use an additional PLL with a freely selectable frequency (additional net of the global Mesh are required).
+ 3 = Use a signal generated by a PLL from your design.
 
+ Please choose between 1 and 3: 2
 
-######################## Found external reset input ########################
-#                                                                          #
-# A potential external reset input signal has been identified,             #
-# which can be used to keep the DUT in reset mode via the ILA, if desired. #
-# Name of the signal: 'reset'                                              #
-#                                                                          #
-############################################################################
+########### found DUT clk source ############
+#                                           #
+# Input serves as ILA clk source: "clk"     #
+#                                           #
+#############################################
 
-Would you like to set a different input signal as a user-controllable reset? (y:yes/N:no)
+Do you want to change the clk source? (y:yes/N:no):
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                 !
+! The sampling frequency determines the rate at which signals are captured.       !
+! When selecting the frequency, ensure it is harmonious with the DUT's frequency, !
+!  either matching or an integral multiple.                                       !
+! Recommended max. sampling frequency up to 160MHz.                               !
+!                                                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Choose a sampling frequency (greater than 0, float, in MHz): 120
 
 </pre>
 
@@ -668,7 +767,31 @@ If the primitive is not found, an external reset input is searched for. The key 
 
 If no signal for reset was found automatically, the user can either define a signal manually or select no signal, in this case the function is not available for the user.
 
-Next, all signals found in the DUT are listed.
+
+<pre>
+
+!!!!!!!!!!!!!!!!!!!!! User controllable reset !!!!!!!!!!!!!!!!!!!!
+!                                                                !
+! The ILA can hold the DUT in reset until capture starts.        !
+! This makes it possible to capture the start process of the DUT !
+! Attention, the ila treats the signal as active LOW.            !
+!                                                                !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+The following options are available:
+
+ 1 = Use an external reset input signal.
+ 2 = Deactivate this function.
+ 3 = Use the ouput signal from the CC_USR_RSTN primitive in your design. Found signal: 'rst' (The functionality of the CC_USR_RSTN primitive is still given).
+
+Please choose between 1 and 3: 3
+
+
+</pre>
+
+Next, all signals found in the DUT are listed, and the user is prompted to select the signals they wish to analyze. By entering `f`, the signals can be filtered according to the modules in which they were found. Entering `0` notifies the system that all signals for analysis have been selected.
+
+Signals that have been chosen are now marked accordingly in the output list. The ['A'] stands for `all` and indicates that the entire vector is being analyzed. If only a specific range has been selected, this will be displayed accordingly in the 'selected' row.
 
 <pre>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -713,12 +836,121 @@ Next, all signals found in the DUT are listed.
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 41
+Select signals to be analyzed (0 = finish, f = filter): f
+
+--------------------- SUT moduls ----------------------
++----+------------------------------------------------+
+|  # | moduls                                         |
++----+------------------------------------------------+
+|  0 | ws2812_gol.                                    |
+|  1 | ws2812_gol.\dualportram.                       |
+|  2 | ws2812_gol.\golx64.                            |
+|  3 | ws2812_gol.\golx64.gol_row:1.gol_column:1.gol. |
+|  4 | ws2812_gol.\golx64.gol_row:1.gol_column:2.gol. |
+...
+| 65 | ws2812_gol.\golx64.gol_row:8.gol_column:7.gol. |
+| 66 | ws2812_gol.\golx64.gol_row:8.gol_column:8.gol. |
+| 67 | ws2812_gol.\ram_to_bit.                        |
+| 68 | ws2812_gol.\ram_to_bit.addrcnt.                |
+| 69 | ws2812_gol.\ram_to_bit.aserial.                |
+| 70 | ws2812_gol.\ram_to_bit.shift_cnt.              |
+| 71 | ws2812_gol.\spi_edge_detect.                   |
+| 72 | ws2812_gol.\spi_slave.                         |
+| 73 | ws2812_gol.\write_bram_rec_cmd.                |
++----+------------------------------------------------+
+
+Select a module from which you would like to analyze signals: 2
+
+---------------- \golx64. signals ----------------
++----+----------------------+---------+----------+
+|  # | name                 |  range  | selected |
++----+----------------------+---------+----------+
+|  1 | break_counter        |  [23:0] |    []    |
+|  2 | clk                  |    1    |    []    |
+|  3 | counter_index        |  [3:0]  |    []    |
+|  4 | din_spi              |  [7:0]  |    []    |
+|  5 | gol_init             |    1    |    []    |
+|  6 | gol_next_gen         |    1    |    []    |
+|  7 | init_pattern         |  [63:0] |    []    |
+|  8 | life_out             |  [99:0] |    []    |
+|  9 | life_shift_cnt       |  [2:0]  |    []    |
+| 10 | nachbarn             |  [35:0] |    []    |
+| 11 | neighbours_in        | [511:0] |    []    |
+| 12 | reset                |    1    |    []    |
+| 13 | rgb_color            |  [1:0]  |    []    |
+| 14 | shift_life_row       |  [7:0]  |    []    |
+| 15 | start_sm_new         |    1    |    []    |
+| 16 | state_color_to_ram   |  [2:0]  |    []    |
+| 17 | tl_gol_state         |  [3:0]  |    []    |
+| 18 | waddr_spi            |  [2:0]  |    []    |
+| 19 | write_en             |    1    |    []    |
+| 20 | write_en_ram         |    1    |    []    |
+| 21 | write_en_s           |    1    |    []    |
+| 22 | write_ws2812_out     |    1    |    []    |
+| 23 | write_ws2812_s       |    1    |    []    |
+| 24 | writeram             |    1    |    []    |
+| 25 | ws2812_busy          |    1    |    []    |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |    []    |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |    []    |
+| 28 | ws2812_rgb_byte      |  [7:0]  |    []    |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |    []    |
++----+----------------------+---------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 0 (max. 1180)                             #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 5
+
+---------------- \golx64. signals ----------------
++----+----------------------+---------+----------+
+|  # | name                 |  range  | selected |
++----+----------------------+---------+----------+
+|  1 | break_counter        |  [23:0] |    []    |
+|  2 | clk                  |    1    |    []    |
+|  3 | counter_index        |  [3:0]  |    []    |
+|  4 | din_spi              |  [7:0]  |    []    |
+|  5 | gol_init             |    1    |  ['A']   |
+|  6 | gol_next_gen         |    1    |    []    |
+|  7 | init_pattern         |  [63:0] |    []    |
+|  8 | life_out             |  [99:0] |    []    |
+|  9 | life_shift_cnt       |  [2:0]  |    []    |
+| 10 | nachbarn             |  [35:0] |    []    |
+| 11 | neighbours_in        | [511:0] |    []    |
+| 12 | reset                |    1    |    []    |
+| 13 | rgb_color            |  [1:0]  |    []    |
+| 14 | shift_life_row       |  [7:0]  |    []    |
+| 15 | start_sm_new         |    1    |    []    |
+| 16 | state_color_to_ram   |  [2:0]  |    []    |
+| 17 | tl_gol_state         |  [3:0]  |    []    |
+| 18 | waddr_spi            |  [2:0]  |    []    |
+| 19 | write_en             |    1    |    []    |
+| 20 | write_en_ram         |    1    |    []    |
+| 21 | write_en_s           |    1    |    []    |
+| 22 | write_ws2812_out     |    1    |    []    |
+| 23 | write_ws2812_s       |    1    |    []    |
+| 24 | writeram             |    1    |    []    |
+| 25 | ws2812_busy          |    1    |    []    |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |    []    |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |    []    |
+| 28 | ws2812_rgb_byte      |  [7:0]  |    []    |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |    []    |
++----+----------------------+---------+----------+
+
+
+## Number of selected bits to be analysed ###
+#                                           #
+# 1 (max. 1180)                             #
+#                                           #
+#############################################
+
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 8
 </pre>
 
-To make it easier to find the signals, they are sorted alphabetically according to their place in the hirachie of the DUT.
-
-The user is prompted to select the signals to be analyzed. When the user selects a signal vector, he can choose to use the entire vector, specific individual signals, subsections of the vector, or a combination of individual signals and subsections within the vector's range.
+ When the user selects a signal vector, he can choose to use the entire vector, specific individual signals, subsections of the vector, or a combination of individual signals and subsections within the vector's range.
 
 <pre>
 
@@ -739,138 +971,56 @@ The user is prompted to select the signals to be analyzed. When the user selects
 
 wire [99:0] life_out: 88:81, 78:71, 68:61, 58:51, 48:41, 38:31, 28:21, 18:11
 
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |         []         |                          |
-...
-|   38 | gol_init             |    1    |         []         | \golx64.                 |
-|   39 | gol_next_gen         |    1    |         []         | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |         []         | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |         []         | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |         []         | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |         []         | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |         []         | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
+--------------------- \golx64. signals ---------------------
++----+----------------------+---------+--------------------+
+|  # | name                 |  range  |      selected      |
++----+----------------------+---------+--------------------+
+|  1 | break_counter        |  [23:0] |         []         |
+|  2 | clk                  |    1    |         []         |
+|  3 | counter_index        |  [3:0]  |         []         |
+|  4 | din_spi              |  [7:0]  |         []         |
+|  5 | gol_init             |    1    |       ['A']        |
+|  6 | gol_next_gen         |    1    |         []         |
+|  7 | init_pattern         |  [63:0] |         []         |
+|  8 | life_out             |  [99:0] | ['88:81', '78:71', |
+|    |                      |         |  '68:61', '58:51', |
+|    |                      |         |  '48:41', '38:31', |
+|    |                      |         |  '28:21', '18:11'] |
+|  9 | life_shift_cnt       |  [2:0]  |         []         |
+| 10 | nachbarn             |  [35:0] |         []         |
+| 11 | neighbours_in        | [511:0] |         []         |
+| 12 | reset                |    1    |         []         |
+| 13 | rgb_color            |  [1:0]  |         []         |
+| 14 | shift_life_row       |  [7:0]  |         []         |
+| 15 | start_sm_new         |    1    |         []         |
+| 16 | state_color_to_ram   |  [2:0]  |         []         |
+| 17 | tl_gol_state         |  [3:0]  |         []         |
+| 18 | waddr_spi            |  [2:0]  |         []         |
+| 19 | write_en             |    1    |         []         |
+| 20 | write_en_ram         |    1    |         []         |
+| 21 | write_en_s           |    1    |         []         |
+| 22 | write_ws2812_out     |    1    |         []         |
+| 23 | write_ws2812_s       |    1    |         []         |
+| 24 | writeram             |    1    |         []         |
+| 25 | ws2812_busy          |    1    |         []         |
+| 26 | ws2812_ram_addr_wr   |  [7:0]  |         []         |
+| 27 | ws2812_ram_addr_wr_s |  [7:0]  |         []         |
+| 28 | ws2812_rgb_byte      |  [7:0]  |         []         |
+| 29 | ws2812_rgb_byte_reg  |  [7:0]  |         []         |
++----+----------------------+---------+--------------------+
+
 
 ## Number of selected bits to be analysed ###
 #                                           #
-# 64 (max. 1180)                            #
+# 65 (max. 1180)                            #
 #                                           #
 #############################################
 
-Which signals should be analyzed (0 = finish)? 39
-
---------------------------------- ws2812_gol ----------------------------------
-+------+----------------------+---------+----------+--------------------------+
-|    # | name                 |  range  | selected | hierarchy                |
-+------+----------------------+---------+----------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |    []    |                          |
-|    2 | byte_send            |  [7:0]  |    []    |                          |
-|    3 | clk                  |    1    |    []    |                          |
-...
-|   38 | gol_init             |    1    |    []    | \golx64.                 |
-|   39 | gol_next_gen         |    1    |  ['A']   | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |    []    | \golx64.                 |
-|   41 | life_out             |  [99:0] |    []    | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |    []    | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |    []    | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |    []    | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |    []    | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |    []    | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |    []    | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |    []    | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |    []    | \write_bram_rec_cmd.     |
-+------+----------------------+---------+----------+--------------------------+
-
-## Number of selected bits to be analysed ###
-#                                           #
-# 65 (max. 1180)                             #
-#                                           #
-#############################################
-
-Which signals should be analyzed (0 = finish)? 3
-
-...
-
--------------------------------------- ws2812_gol ---------------------------------------
-+------+----------------------+---------+--------------------+--------------------------+
-|    # | name                 |  range  |      selected      | hierarchy                |
-+------+----------------------+---------+--------------------+--------------------------+
-|    1 | byte_receive         |  [7:0]  |         []         |                          |
-|    2 | byte_send            |  [7:0]  |         []         |                          |
-|    3 | clk                  |    1    |       ['A']        |                          |
-...
-|   38 | gol_init             |    1    |       ['A']        | \golx64.                 |
-|   39 | gol_next_gen         |    1    |       ['A']        | \golx64.                 |
-|   40 | init_pattern         |  [63:0] |         []         | \golx64.                 |
-|   41 | life_out             |  [99:0] | ['88:81', '78:71', | \golx64.                 |
-|      |                      |         |  '68:61', '58:51', |                          |
-|      |                      |         |  '48:41', '38:31', |                          |
-|      |                      |         |  '28:21', '18:11'] |                          |
-|   42 | life_shift_cnt       |  [2:0]  |         []         | \golx64.                 |
-...
-|   46 | rgb_color            |  [1:0]  |       ['A']        | \golx64.                 |
-|   47 | shift_life_row       |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   59 | ws2812_ram_addr_wr   |  [7:0]  |       ['A']        | \golx64.                 |
-...
-|   62 | ws2812_rgb_byte_reg  |  [7:0]  |       ['A']        | \golx64.                 |
-...
-| 1166 | shift_rgb_byte       |  [7:0]  |       ['A']        | \ram_to_bit.             |
-...
-| 1171 | ws2812_ram_addr_rd   |  [7:0]  |       ['A']        | \ram_to_bit.             |
-...
-| 1175 | data_out             |    1    |         []         | \ram_to_bit.aserial.     |
-...
-| 1210 | start_1              |    1    |         []         | \write_bram_rec_cmd.     |
-| 1211 | start_2              |    1    |         []         | \write_bram_rec_cmd.     |
-+------+----------------------+---------+--------------------+--------------------------+
-
-## Number of selected bits to be analysed ###
-#                                           #
-# 110 (max. 1180)                           #
-#                                           #
-#############################################
-
-Which signals should be analyzed (0 = finish)? 0
-
+Select signals to be analyzed (0 = finish, f = no filter, c = change filter): 
 
 </pre>
 
-Signals that have been selected are now marked accordingly in the output list. The `['A']` stands for all and means that the entire vector is analysed. If only a range was specified, it will be displayed accordingly in the row `selected`.
 
-
-
-When all signals have been selected, you can continue with the further configuration by entering `0`.
 
 <pre>
 
@@ -887,7 +1037,12 @@ When all signals have been selected, you can continue with the further configura
 Choose a sampling frequency (greater than 0, float, in MHz): 40
 </pre>
 
-Afterwards, you have to input the frequency at which the samples should be stored. More Inforamtion about the sampling frequency in section [Frequency analysis](#frequency-analysis).
+Afterwards, the user is prompted to select the duration time from a table.
+The maximum capture duration is calculated based on the sample width and sampling frequency.
+
+The user can select the capture duration before and after the trigger is activated.
+
+More Inforamtion about the capture duration in section [Capture duration](#capture-duration).
 
 <pre>
 !!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!
@@ -904,58 +1059,53 @@ Please choose one of the following durations:
 +---+---------+---------------+
 | # | smp_cnt | duration [us] |
 +---+---------+---------------+
-| 1 |       8 |           0.2 |
-| 2 |      24 |           0.6 |
-| 3 |      56 |           1.4 |
-| 4 |     120 |           3.0 |
-| 5 |     248 |           6.2 |
-| 6 |     504 |          12.6 |
-| 7 |    1016 |          25.4 |
-| 8 |    2040 |          51.0 |
-| 9 |    4088 |         102.2 |
+| 1 |      23 |           2.3 |
+| 2 |      55 |           5.5 |
+| 3 |     119 |          11.9 |
+| 4 |     247 |          24.7 |
+| 5 |     503 |          50.3 |
+| 6 |    1015 |         101.5 |
+| 7 |    2039 |         203.9 |
 +---+---------+---------------+
 
-Capture duration before trigger activation (choose between 1 and 9): 1
+Capture duration before trigger activation (choose between 1 and 7): 1
 
-####### Capture duration before Trigger #######
-#                                             #
-# Sample count = 8                            #
-# Capture duration = 0.2 us                   #
-#                                             #
-###############################################
+###### Capture duration before Trigger ######
+#                                           #
+# Sample count = 23                         #
+# Capture duration = 2.3 us                 #
+#                                           #
+#############################################
 
 Please choose one of the following durations:
-+----+---------+---------------+
-|  # | smp_cnt | duration [us] |
-+----+---------+---------------+
-|  1 |       8 |           0.2 |
-|  2 |      24 |           0.6 |
-|  3 |      56 |           1.4 |
-|  4 |     120 |           3.0 |
-|  5 |     248 |           6.2 |
-|  6 |     504 |          12.6 |
-|  7 |    1016 |          25.4 |
-|  8 |    2040 |          51.0 |
-|  9 |    4088 |         102.2 |
-| 10 |    8184 |         204.6 |
-+----+---------+---------------+
++---+---------+---------------+
+| # | smp_cnt | duration [us] |
++---+---------+---------------+
+| 1 |      41 |           4.1 |
+| 2 |     105 |          10.5 |
+| 3 |     233 |          23.3 |
+| 4 |     489 |          48.9 |
+| 5 |    1001 |         100.1 |
+| 6 |    2025 |         202.5 |
+| 7 |    4073 |         407.3 |
+| 8 |    8169 |         816.9 |
++---+---------+---------------+
 
-Capture duration after trigger activation (choose between 1 and 10): 10
+Capture duration after trigger activation (choose between 1 and 8): 8
 
-####### Capture duration after Trigger ########
-#                                             #
-# Sample count = 8184                         #
-# Capture duration = 204.6 us                 #
-#                                             #
-###############################################
+###### Capture duration after Trigger #######
+#                                           #
+# Sample count = 8169                       #
+# Capture duration = 816.9 us               #
+#                                           #
+#############################################
+
 
 </pre>
 
-The maximum capture duration is calculated based on the sample width and sampling frequency.
+If your selected sample is greater than 4, the pattern compare function can be configured.
 
-The user can select the capture duration before and after the trigger is activated.
-
-More Inforamtion about the capture duration in section [Capture duration](#capture-duration).
+With the help of the pattern compare function, bit patterns can be set as triggers over the entire sample. This function can be switched on or off, so that resources are saved for the case that the function is not needed. More inforamtion about the pattern compare function in section [Trigger Condition](#trigger-condition).
 
 <pre>
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -973,10 +1123,14 @@ More Inforamtion about the capture duration in section [Capture duration](#captu
 
 Would you like me to implement the function for comparing bit patterns? (y/N): y
 </pre>
+All signals in the defined sample are displayed to the user.
 
-If your selected sample is greater than 4, the pattern compare function can be configured.
+Subsequently, the ILA is synthesized, placed, and routed along with the DUT, and their output is piped into the corresponding files, which are displayed.
 
-With the help of the pattern compare function, bit patterns can be set as triggers over the entire sample. This function can be switched on or off, so that resources are saved for the case that the function is not needed. More inforamtion about the pattern compare function in section [Trigger Condition](#trigger-condition).
+Every time the ILA was configured with the interactive shell, the configuration is stored in a JSON file. You are able to edit the file and reconfigure the ILA with the configurations defined inside the file. For more informations see section [Reconfiguaration of the ILA using a JSON File](#reconfiguaration-of-the-ila-using-a-json-file).
+
+The design is uploaded as required and the communication with the gateware is started. How to change the upload mode is explained in section  [Hardware setup](#hardware-setup).
+
 <pre>
 ###### Signals under test ######
 #                             #
@@ -1007,7 +1161,6 @@ Output permanently saved to: C:\Users\df\gatemate_ila/log/yosys.log
 Execute Implementation...
 Output permanently saved to: C:\Users\df\gatemate_ila/log/impl.log
 
-
 #################### Configuration File ####################
 #                                                          #
 # save_config/ila_config_ws2812_gol_23-12-02_17-23-46.json #
@@ -1015,14 +1168,8 @@ Output permanently saved to: C:\Users\df\gatemate_ila/log/impl.log
 ############################################################
 
 Upload to FPGA Board...
+
 </pre>
-All signals in the defined sample are displayed to the user here.
-
-The synthesis and implementation processes are then executed, and their output is piped into the corresponding files, which are displayed.
-
-Every time the ILA was configured with the interactive shell, the configuration is stored in a JSON file. You are able to edit the file and reconfigure the ILA with the configurations defined inside the file. For more informations see section [Reconfiguaration of the ILA using a JSON File](#reconfiguaration-of-the-ila-using-a-json-file).
-
-The design is uploaded as required and the communication with the gateware is started. How to change the upload mode is explained in section  [Hardware setup](#hardware-setup).
 
 
 ### Control the ILA on the FPGA during runtime using the blink example
@@ -1324,7 +1471,15 @@ The waveforms of all sequences are displayed in separate windows once they have 
 
 An example of how a sequence is set and triggered can be found in: [ws2812_gol](example_dut/ws2812_gol)
 
+
+## More examples
+
+
+
+
 ### JSON File
+
+
 
 You can define the analysis signals in the following ways:
 <pre>

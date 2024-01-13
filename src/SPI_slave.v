@@ -77,17 +77,6 @@ begin
     end
 end
 
-//always @(posedge i_sclk) 
-//begin
-//    if (i_ss | (bit_cnt == 3'b100)) begin
-//        end_byte_rec_read <= 0;
-//    end
-//    else if (bit_cnt == 3'b000) begin
-//        end_byte_rec_read <= 1;
-//    end
-//end
-
-//assign o_rec_byte_ready = end_byte_rec_read;
 
 assign o_rec_byte_ready = end_byte_s;
 

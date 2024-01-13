@@ -37,7 +37,7 @@ entity gol is
 end gol;
 
 architecture behv of gol is
-  signal s, r, logik_1, logik_2, logik_3, logik_4, logik_5, logik_6, logik_7: std_logic;
+  signal s, r, tmp, logik_1, logik_2, logik_3, logik_4, logik_5, logik_6, logik_7: std_logic;
 begin
 
   logik_1 <= (((N(0) and N(1)) or (N(2) and (N(0) xor N(1)))) xor ((N(3) and N(4)) or ((N(3) xor N(4)) and N(5))));
@@ -54,23 +54,23 @@ begin
   
   
     gol_p : process (clk)
-    variable tmp: std_logic := '0';
     begin
 	if falling_edge(clk) then
 		if (reset = '0') then 
-			tmp := '0';
+			tmp <= '0';
         elsif (set = '1') then
-            tmp := CPUin;
+            tmp <= CPUin;
         elsif (nextGen = '1') then
             if(s='1')then
-                tmp:= '1';
+                tmp <= '1';
             elsif(r='1')then
-                tmp:= '0';
+                tmp <= '0';
             end if; 
         end if;
     end if;
-    L <= tmp;
     end PROCESS;
+
+    L <= tmp;
     
     
 end behv;

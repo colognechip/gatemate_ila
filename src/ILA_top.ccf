@@ -13,7 +13,7 @@ Pin_in   "i_ss_ILA"  	  Loc = "IO_WA_B4";
 # *******************************SUT Signals*************************************************** #
 # // __Place~for~Signals~SUT__
 
-Pin_in "i_clk"           Loc = "IO_SB_A8" | SCHMITT_TRIGGER=true;    # Clock0
+Pin_in "clk"           Loc = "IO_SB_A8" | SCHMITT_TRIGGER=true;    # Clock0
 Pin_in   "reset"   Loc = "IO_EB_B0"; 
 
 Pin_out  "led[0]"                   Loc = "IO_EB_B1";                           # LED D1

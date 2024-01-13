@@ -31,7 +31,8 @@ module bram_control#(
     parameter BRAM_matrix_wide = 1,
     parameter BRAM_matrix_deep = 1,
     parameter BRAM_single_wide = 5,
-    parameter BRAM_single_deep = 9
+    parameter BRAM_single_deep = 9,
+    parameter SIGNAL_SYNCHRONISATION=0
     
 )(
     input i_clk_ILA,
@@ -46,6 +47,7 @@ module bram_control#(
     input  [5:0] trigger_row,
     output [(BRAM_single_wide-1):0] trigger_out
 );
+
 
 wire [(sample_width-1):0] RAM_smp_out;
 
@@ -89,11 +91,12 @@ generate
         end
         for (i = 0; i < BRAM_matrix_deep; i = i+1) begin : loop
             bram_ila  #(.DATA_WIDTH(BRAM_single_wide), 
-                        .ADDR_WIDTH(BRAM_single_deep)) 
+                        .ADDR_WIDTH(BRAM_single_deep),
+                        .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) 
             ila_bram   (.clk(i_clk_BRAM),
                         .rclk(i_sclk), 
                         .we(we_BRAM[i]),
-                        .di(i_sample[((BRAM_single_wide)*(j+1)-1):(BRAM_single_wide)*(j)]),
+                        .di(data_in_pipe[j]),
                         .addr_read(addr_cnt_rd[BRAM_single_deep-1:0]),
                         .addr_write(addr_cnt_wd[BRAM_single_deep-1:0]),
                         .do(BRAM_do_tmp[i][(BRAM_single_wide*(j+1))-1 :BRAM_single_wide*j]));

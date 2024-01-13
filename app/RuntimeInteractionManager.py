@@ -102,8 +102,7 @@ def openGTKWave(file_name):
 
 class RuntimeInteractionManager:
     menu_options = ['exit', 'change Trigger', 'start capture',
-                    'reset ILA (resets the config of the ILA)',
-                    'reset DUT (hold the DUT in reset until the capture starts)']
+                    'reset ILA (resets the config of the ILA)']
     trigger = 0         # Trigger Signal Index
     activation = 0      # trigger activation
     trigger_activations = ['falling edge', 'rising edge']
@@ -123,7 +122,10 @@ class RuntimeInteractionManager:
     trigger_mask = ""
 
     def __init__(self, an_freq=40000000, smp_before=100, smp_after=1000, signale=[], project_name = "test",
-                 with_pattern=False, bram_single_wide = 5, bram_matrix_wide = 1):
+                 with_pattern=False, bram_single_wide = 5, bram_matrix_wide = 1, use_reset_function = False):
+        self.use_reset_function = use_reset_function
+        if self.use_reset_function:
+            self.menu_options.append('reset DUT (hold the DUT in reset until the capture starts)')
         self.trigger_all = [{"activation" : 0b00110000, "trigger" : (0b10010000, 0), "trigger_clear": 0}]
         self.project_name = project_name
         self.analysis_frequency = an_freq
@@ -178,7 +180,7 @@ class RuntimeInteractionManager:
                     option = int(input_entered)
                 except Exception as exception:
                     print(os.linesep + "wrong Input!")
-                    print(exception)
+                    #print(exception)
                     traceback.print_exc()
                     continue
                 if option == 0:
@@ -192,7 +194,7 @@ class RuntimeInteractionManager:
                     self.com.send_reset_ila()
                     self.trigger_all = [{"activation": 0b00110000, "trigger": (0b10010000, 0), "trigger_clear": 0}]
                     self.trigger_mask =  '1' * self.signal_count
-                elif option == 4:
+                elif option == 4 and self.use_reset_function:
                     self.com.reset_DUT()
                 else:
                     print(os.linesep + "Value out of range")
@@ -351,7 +353,7 @@ class RuntimeInteractionManager:
 
 
                 except Exception as exception:
-                    traceback.print_exc()
+                    #traceback.print_exc()
                     print(print_note(["Invalid input. Please enter a valid int value.",
                                       "Entering 'e' exits the process.",
                                       "Enter 'p' for 'previous' to backtrack a step."
@@ -420,6 +422,7 @@ class RuntimeInteractionManager:
                 table.add_row([counter, names])
         for field in table.field_names:
             table.align[field] = "r"
+        print()
         print_table(word, table)
 
 

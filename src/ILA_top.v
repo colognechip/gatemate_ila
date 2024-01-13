@@ -24,32 +24,35 @@
 */
 
 module ila_top#(
+    parameter SIGNAL_SYNCHRONISATION = 0,
+    parameter USE_USR_RESET = 1, 
+    parameter USE_PLL = 0,
     parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 4096,
-    parameter bits_samples_count_before_trigger = 11,
+    parameter samples_count_before_trigger = 32,
+    parameter bits_samples_count_before_trigger = 4,
     parameter bits_samples_count = 13,
-    parameter sample_width = 65,
+    parameter sample_width = 68,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "40",
-    parameter BRAM_matrix_wide = 13,
+    parameter sampling_freq_MHz = "10.0",
+    parameter BRAM_matrix_wide = 14,
     parameter BRAM_matrix_deep = 2,
     parameter BRAM_single_wide = 5,
     parameter BRAM_single_deep = 13,
     parameter clk_delay = 2
 )(
-    input i_clk,
     (* clkbuf_inhibit *) input i_sclk_ILA,
     input i_mosi_ILA,
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~Signals~start__
+input clk,
 input i_mosi,
 input i_sclk,
 input i_ss,
-input reset,
 output [7:0] led,
 output o_miso,
+input reset,
 output ws2812_out,
 // __Place~for~Signals~ends__
 // #################################################################################################
@@ -62,61 +65,63 @@ output ws2812_out,
 
 wire [(sample_width-1):0] sample;
 wire clk0_2;
-
+wire USR_RSTN;
 reg hold_reset;
 wire reset_DUT;
+wire ILA_clk_src;
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
+assign ILA_clk_src = clk;
 wire reset_DUT_port;
 assign reset_DUT_port = (reset_DUT & reset);
-ws2812_gol DUT ( .clk(i_clk), .reset(reset_DUT_port), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
+ws2812_gol DUT (.reset(reset_DUT_port), .clk(clk), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
 // cc PLL instance
 wire clk270, clk180, clk90, clk0, i_clk_ILA, usr_ref_out_1;
 wire usr_pll_lock_stdy_1, usr_pll_lock_1;
-CC_PLL #(
-		.REF_CLK(external_clk_freq),    // reference input in MHz
-		.OUT_CLK(sampling_freq_MHz),   // pll output frequency in MHz
-		.PERF_MD("SPEED"), // LOWPOWER, ECONOMY, SPEED
-		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
-		.CI_FILTER_CONST(2), // optional CI filter constant
-		.CP_FILTER_CONST(4)  // optional CP filter constant
-	) pll_inst_ila (
-		.CLK_REF(i_clk), .CLK_FEEDBACK(1'b0), .USR_CLK_REF(1'b0),
-		.USR_LOCKED_STDY_RST(1'b0), .USR_PLL_LOCKED_STDY(usr_pll_lock_stdy_1), .USR_PLL_LOCKED(usr_pll_lock_1),
-		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out_1)
-	);
+generate
+    if (USE_PLL == 1) begin
+        CC_PLL #(
+        		.REF_CLK(external_clk_freq),    // reference input in MHz
+        		.OUT_CLK(sampling_freq_MHz),   // pll output frequency in MHz
+        		.PERF_MD("SPEED"), // LOWPOWER, ECONOMY, SPEED
+        		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
+        		.CI_FILTER_CONST(2), // optional CI filter constant
+        		.CP_FILTER_CONST(4)  // optional CP filter constant
+        	) pll_inst_ila (
+        		.CLK_REF(ILA_clk_src), .CLK_FEEDBACK(1'b0), .USR_CLK_REF(1'b0),
+        		.USR_LOCKED_STDY_RST(1'b0), .USR_PLL_LOCKED_STDY(usr_pll_lock_stdy_1), .USR_PLL_LOCKED(usr_pll_lock_1),
+        		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out_1)
+        	);
+            if (clk_delay == 0) begin
+                assign i_clk_ILA = clk0;
+            end
+            else if (clk_delay == 1) begin
+                assign i_clk_ILA = clk90;
+            end
+            else if (clk_delay == 2) begin
+                assign i_clk_ILA = clk180;
+            end
+            else begin
+                assign i_clk_ILA = clk270;
+            end
+        end else begin
+            assign i_clk_ILA = ILA_clk_src;
+        end
+endgenerate
 
 
-CC_BUFG bufg_inst (
-	.I(i_clk), // Input from CPE array or input buffer
-	.O(clk0_2) // Output to global routing resource
-	);  
 
-wire USR_RSTN;
 CC_USR_RSTN usr_rstn_inst (
    .USR_RSTN(USR_RSTN) // reset signal to CPE array
 );
 
-assign reset_DUT = (!USR_RSTN) ? 0 : hold_reset;
 
-generate
-    if (clk_delay == 0) begin
-        assign i_clk_ILA = clk0;
-    end
-    else if (clk_delay == 1) begin
-        assign i_clk_ILA = clk90;
-    end
-    else if (clk_delay == 2) begin
-        assign i_clk_ILA = clk180;
-    end
-    else begin
-        assign i_clk_ILA = clk270;
-    end
-endgenerate
+
+
 
 
 
@@ -140,10 +145,6 @@ spi_slave spi_passiv (.i_sclk(i_sclk_ILA),
 
 reg ila_reset_register;                                     // Register to reset the ILA from SPI
 
-// wire slave_rec_byte_ready_post_edge, slave_rec_byte_ready_nedge_edge;
-
-//edge_detection slave_rec_byte_ready (.i_clk(i_clk_ILA), .i_reset(ila_reset_register), .i_signal(s_s_rec_byte_ready), .o_post_edge(slave_rec_byte_ready_post_edge), .o_nedge_edge(slave_rec_byte_ready_nedge_edge));
-
 // Processing of the received commands
 
 wire change_trigger_hold, change_trigger_activation_hold;
@@ -158,17 +159,6 @@ always @(posedge i_clk_ILA) begin
     end else
     ready_read <= 0;
 end
-
-// Synchronizing received byte
-
-//reg [7:0] SPI_rec_byte_stable;
-//always @(posedge i_clk_ILA) begin
-//    if (!ila_reset_register) begin
-//        SPI_rec_byte_stable <= 0;
-//    end else begin
-//        SPI_rec_byte_stable <= spi_byte_receive;
-//    end
-//end
 
 // Processing SPI command: ILA reset
 
@@ -189,28 +179,34 @@ wire dut_reset_signal;
 wire trigger_active_hold;
 reg hold_done;
 
-receive_command #(.ADDR(8'b10101111)) dut_reset (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
-.i_done(hold_done), .o_hold(dut_reset_signal));
+generate
+    if (USE_USR_RESET == 1) begin
+            
+        receive_command #(.ADDR(8'b10101111)) dut_reset (.i_clk(i_sclk_ILA), .i_reset(ila_reset_register), .i_ready_read(ready_read), .i_Byte(spi_byte_receive),
+        .i_done(hold_done), .o_hold(dut_reset_signal));
 
-always @(posedge i_sclk_ILA) begin
-    if (!ila_reset_register) begin
-        hold_done <= 0;
-    end else if (dut_reset_signal & s_s_rec_byte_ready) begin
-        hold_done <= 1;
-    end
-    else begin
-        hold_done <= 0;
-    end
-end
+        always @(posedge i_sclk_ILA) begin
+            if (!ila_reset_register) begin
+                hold_done <= 0;
+            end else if (dut_reset_signal & s_s_rec_byte_ready) begin
+                hold_done <= 1;
+            end
+            else begin
+                hold_done <= 0;
+            end
+        end
 
-always @(posedge i_sclk_ILA) begin
-    if (!ila_reset_register | trigger_active_hold) begin
-        hold_reset <= 1;
-    end else if (hold_done) begin
-        hold_reset <= !hold_reset;
-    end 
-end
+        always @(posedge i_sclk_ILA) begin
+            if (!ila_reset_register | trigger_active_hold) begin
+                hold_reset <= 1;
+            end else if (hold_done) begin
+                hold_reset <= !hold_reset;
+            end 
+        end
 
+        assign reset_DUT = (!USR_RSTN) ? 0 : hold_reset;
+        end
+endgenerate
 // Processing SPI command: set Trigger Signal
 
 reg [5:0] trigger_column;
@@ -554,7 +550,8 @@ bram_control #(.samples_count_before_trigger(samples_count_before_trigger),
             .BRAM_matrix_wide(BRAM_matrix_wide),
             .BRAM_matrix_deep(BRAM_matrix_deep),
             .BRAM_single_wide(BRAM_single_wide),
-            .BRAM_single_deep(BRAM_single_deep)) mem_control (.i_clk_ILA(i_clk_ILA), 
+            .BRAM_single_deep(BRAM_single_deep),
+            .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) mem_control (.i_clk_ILA(i_clk_ILA), 
             .i_sclk(i_sclk_ILA),
             .i_reset(trigger_active_hold),
             .i_read_active(read_active),  

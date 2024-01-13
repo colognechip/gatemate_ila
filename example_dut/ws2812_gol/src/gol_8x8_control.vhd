@@ -84,6 +84,8 @@ SIGNAL TL_GOL_STATE : TL_GOL_STATE_TYPE := cpu_load;
 
 signal rgb_color : integer range 0 to 2;
 
+signal break_counter : integer range 0 to 10000000;
+
 type ram is array (0 to 7) of std_ulogic_vector(7 downto 0);
 signal init_pattern : ram;
 
@@ -133,7 +135,6 @@ end generate;
 
 write_ws2812_out <= write_ws2812_s;
 state_maschine : process (clk) is   
-variable break_counter : integer range 0 to 10000000;
 	begin
 	if rising_edge(clk) then
 			if reset = '0' or start_sm_new = '1' then
@@ -169,11 +170,11 @@ variable break_counter : integer range 0 to 10000000;
 						write_ws2812_s <= '0';
 						if (ws2812_busy = '0') then
 							TL_GOL_STATE <= wait_break;
-							break_counter := 0;
+							break_counter <= 0;
 						end if;
 					when wait_break =>
 						if break_counter < 10000000 then
-							break_counter := break_counter+1;
+							break_counter <= break_counter+1;
 						else
 							TL_GOL_STATE <= next_gen;
 						end if; 

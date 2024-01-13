@@ -12,14 +12,17 @@ example usage:
 python3 ILAcop.py [Commands]
 
 Commands:
-  config:   Configure the ILA. the following options must be included:
-             -vlog:    Paths to the Verilog source code files.
-             -vhd:  Paths to the VHDL source code files.
-             -t:    Top level entity of the design under test.
-             -ccf:  Folder containing the .ccf file of the design under test. 
-             -f:    Defines the external clock frequency in MHz (default is 10.0 MHz).
+  config:   Configure the ILA.
+             -vlog SOURCE    Paths to the Verilog source code files.
+             -vhd SOURCE     Paths to the VHDL source code files.
+             -t NAME         Top level entity of the design under test.
+             -ccf SOURCE     Folder containing the .ccf file of the design under test. 
+             -f MHz          Defines the external clock frequency in MHz (default is 10.0 MHz).
+             -sync LEVEL     Number of register levels via which the SUT are synchronised.
+             -d DELAY        ILA PLL Phase shift of sampling frequency. 0=0°, 1=90°, 2=180°, 3=270° (default: 2).
+             -opt            Optimizes the design by deleting all unused signals before design evaluation.
           (optional) Subcommands config: 
-                create_json: Creates a JSON file in which the logic analyzer can be configured.
+                -create_json: Creates a JSON file in which the logic analyzer can be configured.
             NOTE: Without the subcommand the configurations are requested step by step via the terminal.
   
   reconfig: Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
@@ -36,11 +39,6 @@ p.add_argument('--showdev', dest='showdev', action='store_true', help='Outputs a
 
 Modes_delay = [0,1,2,3]
 
-p.add_argument('-d', dest='delay', type=int, metavar=Modes_delay, default=Modes_delay[2], required=False,
-               help='Set the phase shift of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2).')
-
-p.add_argument('-opt', dest='opt', action='store_true', default=False, required=False,
-               help='This optimizes the design by deleting all unused signals before signal evaluation.')
 
 p.add_argument('-wd', dest='work_dir', type=str, required=False,
                                    help='Folder from which Yosys should be started for the synthesis of the Design Under Test.')
@@ -48,7 +46,6 @@ p.add_argument('-wd', dest='work_dir', type=str, required=False,
 main_actions = p.add_subparsers(title="main_actions", dest='main_action')
 
 main_actions_config_parser = main_actions.add_parser(actions[0])
-
 
 
 main_actions_config_parser.add_argument('-create_json', dest='create_json', action='store_true', help='creates a JSON '
@@ -66,6 +63,28 @@ main_actions_config_parser.add_argument('-ccf', dest='ccf', type=str, required=F
                                         help='Folder containing the .ccf file.')
 main_actions_config_parser.add_argument('-f', dest="fsource", type=str, default="10.0",
                                         help="defines the external clock frequency in MHz as float")
+
+main_actions_config_parser.add_argument('-d', dest='delay', type=int, metavar=Modes_delay, default=Modes_delay[2], required=False,
+            help='Set the phase shift of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2).')
+
+
+def positive_int(value):
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid integer value")
+
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive integer value")
+    return ivalue
+
+
+main_actions_config_parser.add_argument('-sync', dest='sync', type=positive_int, default=0, required=False,
+               help='Determines the number of register levels via which the signals to be analysed are synchronised.')
+
+main_actions_config_parser.add_argument('-opt', dest='opt', action='store_true', default=False, required=False,
+               help='This optimizes the design by deleting all unused signals before signal evaluation.')
+
 main_actions_reconfig_parser_start = main_actions.add_parser(actions[2])
 main_actions_reconfig_parser_reconfig = main_actions.add_parser(actions[1])
 main_actions_reconfig_parser_reconfig.add_argument('-l', dest='load', type=str, metavar='[filename].json', required=True,
@@ -128,6 +147,8 @@ if args.main_action == actions[0]: # config
     ILA_config_instance.set_DUT_top(args.top)
     ILA_config_instance.set_external_clk_freq(args.fsource)
     ILA_config_instance.set_ILA_clk_delay(args.delay)
+    ILA_config_instance.set_ILA_opt(args.opt)
+    ILA_config_instance.set_sync_level(args.sync)
     # finding all Verilog files
     if args.verilog_source:
         ILA_config_instance.set_verilog(args.verilog_source)
@@ -142,33 +163,32 @@ if args.main_action == actions[0]: # config
         ccf_found = ILA_config_instance.set_DUT_ccf(sources[0])
     if not ccf_found:
         exit()
-    if not ILA_config_instance.flat_DUT(args.opt, args.work_dir):
+    if not ILA_config_instance.flat_DUT(args.work_dir):
         exit()
-    if args.create_json:
-        ILA_config_instance.get_SUT_Signals()
-        max_io = ILA_config_instance.get_Ports_DUT()
-        usr_in = ILA_config_instance.select_ports(max_io)
-        if usr_in == 'e':
-            exit()
-        usr_in = ILA_config_instance.define_reset(max_io)
-        if usr_in == 'e':
-            exit()
-        ILA_config_instance.delete_ports()
+    code_lines = ILA_config_instance.get_DUT_flat_code()
+    found_element = ILA_config_instance.parse_DUT(code_lines)
 
+    if args.create_json:
+        usr_in = ILA_config_instance.choose_clk_source(found_element["pll"])
+
+        if usr_in == 'e':
+            exit()
+        usr_in = ILA_config_instance.choose_reset(found_element["reset"])
+        if usr_in == 'e':
+            exit()
+        file_name = ILA_config_instance.save_to_json()
+        print(print_note(["Edit configurations in the created .json file and start the configuration:",
+                          "python3 ILAcop.py reconfig -l " + file_name], " Create json ", "#"))
+        exit()
     else:
-        set_correct, total_size = ILA_config_instance.define_analyzed_signals(True)
+        set_correct = ILA_config_instance.user_config_loop(found_element["pll"], found_element["reset"])
         if not set_correct:
             file_name = ILA_config_instance.save_to_json()
             print(print_note(["Configurations for the DUT can be changed in: ",
                               file_name], " Create json ", "#"))
             exit()
-
+        ILA_config_instance.create_DUT(code_lines, found_element)
         ILA_config_instance.set_config_ILA()
-    if args.create_json:
-        file_name = ILA_config_instance.save_to_json()
-        print(print_note(["Edit configurations in the created .json file and start the configuration:",
-                                               "python3 ILAcop.py reconfig -l " + file_name ], " Create json ", "#"))
-        exit()
 
 
 elif args.main_action == actions[1]: # reconfig
@@ -179,15 +199,20 @@ elif args.main_action == actions[1]: # reconfig
     ILA_config_instance, config_check = ILAConfig.load_from_json(file_name)
     if not config_check:
         exit()
-    if not ILA_config_instance.flat_DUT(args.opt, args.work_dir):
+    if not ILA_config_instance.flat_DUT(args.work_dir):
         exit()
-    set_correct, total_size = ILA_config_instance.define_analyzed_signals(False)
-    if not set_correct:
+    code_lines = ILA_config_instance.get_DUT_flat_code()
+    found_element = ILA_config_instance.parse_DUT(code_lines, False)
+    total_size = ILA_config_instance.create_DUT(code_lines, found_element)
+    if total_size == 0:
         print("!ERROR!")
         if total_size == 0:
             print("You must select at least one signal for analysis in the JSON file.")
         exit()
     usr_in = ILA_config_instance.choose_Capture_time(total_size)
+    if usr_in in ['e', 'p']:
+        exit()
+    ILA_config_instance.set_config_ILA()
     ILA_config_instance.set_config_ILA()
 
 
@@ -228,6 +253,7 @@ ILA_user = RuntimeInteractionManager(int(float(ILA_config_instance.ILA_sampling_
                                      ILA_config_instance.samples_count_before_trigger,
                                      (2**ILA_config_instance.bits_samples_count) - ILA_config_instance.samples_count_before_trigger,
                ILA_config_instance.get_Signals_run(), ILA_config_instance.SUT_top_name, ILA_config_instance.sample_compare_pattern,
-                                     ILA_config_instance.bram_single_wide, ILA_config_instance.bram_matrix_wide)
+                                     ILA_config_instance.bram_single_wide, ILA_config_instance.bram_matrix_wide,
+                                     ILA_config_instance.use_reset_fuction)
 ILA_user.run()
 

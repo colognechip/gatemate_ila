@@ -1,7 +1,8 @@
 // Single Port RAM (NO_CHANGE)
 module bram_ila #(
     parameter DATA_WIDTH=32,
-    parameter ADDR_WIDTH=9
+    parameter ADDR_WIDTH=9,
+    parameter SIGNAL_SYNCHRONISATION=0
     )(
     input wire we,
     input wire clk,
@@ -15,12 +16,21 @@ module bram_ila #(
     localparam WORD = (DATA_WIDTH-1);
     localparam DEPTH = (2**ADDR_WIDTH-1);
     reg [WORD:0] memory [0:DEPTH];
-    reg [WORD:0] save_reg;
+    reg [WORD:0] pipeline [SIGNAL_SYNCHRONISATION:0];
 
+    assign pipeline[0] = di;
+
+    generate
+        genvar i;
+        for (i = 0; i < SIGNAL_SYNCHRONISATION; i = i+1) begin : loop
+            always @(posedge clk) begin
+                pipeline[i+1] <= pipeline[i];
+            end
+        end
+    endgenerate
     always @(posedge clk) begin
-        save_reg <= di;
     if (we) begin
-        memory[addr_write] <= save_reg;
+        memory[addr_write] <= pipeline[SIGNAL_SYNCHRONISATION];
     end
     
 
