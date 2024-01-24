@@ -56,7 +56,7 @@ reg write_done;
 parameter ma_deep_ad =  $clog2(BRAM_matrix_deep);
 
 reg [((BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_rd;
-reg [((BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd;
+reg [((BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd, addr_cnt_wd_pip;
 
 
 reg [bits_samples_count:0] wd_counter;
@@ -79,7 +79,7 @@ generate
         if (BRAM_matrix_deep == 1) begin
             assign we_BRAM[i] = !write_done; 
         end else begin
-            assign we_BRAM[i] = ((!write_done) & (addr_cnt_wd[((BRAM_single_deep+ma_deep_ad)-1):BRAM_single_deep] == i));
+            assign we_BRAM[i] = ((!write_done) & (addr_cnt_wd_pip[((BRAM_single_deep+ma_deep_ad)-1):BRAM_single_deep] == i));
         end
     end
     for (j = 0; j < BRAM_matrix_wide; j = j +1) begin : loop
@@ -98,7 +98,7 @@ generate
                         .we(we_BRAM[i]),
                         .di(data_in_pipe[j]),
                         .addr_read(addr_cnt_rd[BRAM_single_deep-1:0]),
-                        .addr_write(addr_cnt_wd[BRAM_single_deep-1:0]),
+                        .addr_write(addr_cnt_wd_pip[BRAM_single_deep-1:0]),
                         .do(BRAM_do_tmp[i][(BRAM_single_wide*(j+1))-1 :BRAM_single_wide*j]));
         end
     end
@@ -146,7 +146,7 @@ always @(posedge i_sclk) begin
         addr_cnt_rd <= addr_cnt_rd+1;
     end
     else if (write_done & (!i_read_active)) begin
-        addr_cnt_rd <= addr_cnt_wd+1;
+        addr_cnt_rd <= addr_cnt_wd_pip+1;
     end
 
 end
@@ -158,6 +158,7 @@ always @(posedge i_clk_ILA) begin
     end
     else if (!write_done) begin
         addr_cnt_wd <= addr_cnt_wd + 1;
+        addr_cnt_wd_pip <= addr_cnt_wd;
     end
 end
 
