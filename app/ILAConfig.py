@@ -1248,7 +1248,7 @@ class ILAConfig:
         self.cc_usr_rst_found = False
         if len(found_element["reset"]) > 0:
             self.cc_usr_rst_found = True
-            pattern = r"\s*\(\*.*?\*\)"
+            pattern = r"^\s*\(\*.*?\*\)\r?$"
             replacement_string = replacement_string + "ILA_rst, "
             import_ioput.append("input ILA_rst;" + os.linesep)
             code_lines[found_element["reset"][0][0]:(found_element["reset"][0][1]+1)] = \

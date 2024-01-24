@@ -28,16 +28,16 @@ module ila_top#(
     parameter USE_USR_RESET = 1, 
     parameter USE_PLL = 0,
     parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 32,
-    parameter bits_samples_count_before_trigger = 4,
-    parameter bits_samples_count = 13,
-    parameter sample_width = 68,
+    parameter samples_count_before_trigger = 2048,
+    parameter bits_samples_count_before_trigger = 10,
+    parameter bits_samples_count = 11,
+    parameter sample_width = 25,
     parameter external_clk_freq = "10.0",
     parameter sampling_freq_MHz = "10.0",
-    parameter BRAM_matrix_wide = 14,
-    parameter BRAM_matrix_deep = 2,
+    parameter BRAM_matrix_wide = 5,
+    parameter BRAM_matrix_deep = 1,
     parameter BRAM_single_wide = 5,
-    parameter BRAM_single_deep = 13,
+    parameter BRAM_single_deep = 12,
     parameter clk_delay = 2
 )(
     (* clkbuf_inhibit *) input i_sclk_ILA,
@@ -47,13 +47,7 @@ module ila_top#(
 // # ********************************************************************************************* #
 // __Place~for~Signals~start__
 input clk,
-input i_mosi,
-input i_sclk,
-input i_ss,
-output [7:0] led,
-output o_miso,
-input reset,
-output ws2812_out,
+output led,
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -73,9 +67,7 @@ wire ILA_clk_src;
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
 assign ILA_clk_src = clk;
-wire reset_DUT_port;
-assign reset_DUT_port = (reset_DUT & reset);
-ws2812_gol DUT (.reset(reset_DUT_port), .clk(clk), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
+blink DUT (.ILA_rst(reset_DUT), .clk(clk), .led(led), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));

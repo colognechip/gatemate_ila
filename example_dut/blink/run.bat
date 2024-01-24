@@ -1,9 +1,9 @@
 @echo off
 
 :: toolchain
-set YOSYS=../../bin/yosys/yosys.exe
-set PR=../../bin/p_r/p_r.exe
-set OFL=../../bin/openFPGALoader/openFPGALoader.exe
+set YOSYS=yosys
+set PR=p_r
+set OFL=openFPGALoader
 
 :: project name and sources
 set TOP=blink
