@@ -759,22 +759,22 @@ class ILAConfig:
                                "single_deep": 12, "consumption": (ma_wide_5 * ma_deep_12)})
         # 5_bit_40k
         all_BRAM_count.append({"wide": ma_wide_5, "deep": ma_deep_13, "single_wide": 5,
-                               "single_deep": 13, "consumption": (ma_wide_5 * ma_deep_13 * 2)})
+                               "single_deep": 13, "consumption": ((ma_wide_5 * ma_deep_13 * 2)-1)})
         # 10_bit_20k
         all_BRAM_count.append({"wide": ma_wide_10, "deep": ma_deep_11,
                                "single_wide": 10, "single_deep": 11, "consumption": (ma_wide_10 * ma_deep_11)})
         # 10_bit_40k
         all_BRAM_count.append({"wide": ma_wide_10, "deep": ma_deep_12,
-                               "single_wide": 10, "single_deep": 12, "consumption": (ma_wide_10 * ma_deep_12 * 2)})
+                               "single_wide": 10, "single_deep": 12, "consumption": ((ma_wide_10 * ma_deep_12 * 2)-1)})
         # 20_bit_20k
         all_BRAM_count.append({"wide": ma_wide_20, "deep": ma_deep_10,
                                "single_wide": 20, "single_deep": 10, "consumption": ma_wide_20 * ma_deep_10})
         # 20_bit_40k
         all_BRAM_count.append({"wide": ma_wide_20, "deep": ma_deep_11,
-                               "single_wide": 20, "single_deep": 11, "consumption": (ma_wide_20 * ma_deep_11 * 2)})
+                               "single_wide": 20, "single_deep": 11, "consumption": ((ma_wide_20 * ma_deep_11 * 2)-1)})
         # 40_bit_20k
         all_BRAM_count.append({"wide": ma_wide_40, "deep": ma_deep_10, "single_wide": 40, "single_deep": 10,
-                               "consumption": (ma_wide_40 * ma_deep_10 * 2)})
+                               "consumption": ((ma_wide_40 * ma_deep_10 * 2)-1)})
         return min(all_BRAM_count, key=lambda x: (x["consumption"], x["deep"]))
 
     def choose_Capture_time(self, total_size):

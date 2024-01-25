@@ -53,10 +53,14 @@ wire [(sample_width-1):0] RAM_smp_out;
 
 reg write_done;
 
+
+
 parameter ma_deep_ad =  $clog2(BRAM_matrix_deep);
 
-reg [((BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_rd;
-reg [((BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd, addr_cnt_wd_pip;
+localparam local_BRAM_single_deep = (BRAM_matrix_deep == 1) ? (bits_samples_count+1) : BRAM_single_deep;
+
+reg [((local_BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_rd;
+reg [((local_BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd, addr_cnt_wd_pip;
 
 
 reg [bits_samples_count:0] wd_counter;
@@ -79,7 +83,7 @@ generate
         if (BRAM_matrix_deep == 1) begin
             assign we_BRAM[i] = !write_done; 
         end else begin
-            assign we_BRAM[i] = ((!write_done) & (addr_cnt_wd_pip[((BRAM_single_deep+ma_deep_ad)-1):BRAM_single_deep] == i));
+            assign we_BRAM[i] = ((!write_done) & (addr_cnt_wd_pip[((local_BRAM_single_deep+ma_deep_ad)-1):local_BRAM_single_deep] == i));
         end
     end
     for (j = 0; j < BRAM_matrix_wide; j = j +1) begin : loop
@@ -91,21 +95,21 @@ generate
         end
         for (i = 0; i < BRAM_matrix_deep; i = i+1) begin : loop
             bram_ila  #(.DATA_WIDTH(BRAM_single_wide), 
-                        .ADDR_WIDTH(BRAM_single_deep),
+                        .ADDR_WIDTH(local_BRAM_single_deep),
                         .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) 
             ila_bram   (.clk(i_clk_BRAM),
                         .rclk(i_sclk), 
                         .we(we_BRAM[i]),
                         .di(data_in_pipe[j]),
-                        .addr_read(addr_cnt_rd[BRAM_single_deep-1:0]),
-                        .addr_write(addr_cnt_wd_pip[BRAM_single_deep-1:0]),
+                        .addr_read(addr_cnt_rd[local_BRAM_single_deep-1:0]),
+                        .addr_write(addr_cnt_wd_pip[local_BRAM_single_deep-1:0]),
                         .do(BRAM_do_tmp[i][(BRAM_single_wide*(j+1))-1 :BRAM_single_wide*j]));
         end
     end
     if (BRAM_matrix_deep == 1) begin
         assign RAM_smp_out = BRAM_do_tmp[0][(sample_width-1):0];
     end else begin
-        assign RAM_smp_out = BRAM_do_tmp[addr_cnt_rd[((BRAM_single_deep+ma_deep_ad)-1):BRAM_single_deep]][(sample_width-1):0];
+        assign RAM_smp_out = BRAM_do_tmp[addr_cnt_rd[((local_BRAM_single_deep+ma_deep_ad)-1):local_BRAM_single_deep]][(sample_width-1):0];
     end
 
 endgenerate

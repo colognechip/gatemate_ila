@@ -67,28 +67,26 @@ module ila_top_tb;
 // #################################################################################################
     // ILA configuration
 
-  parameter bits_samples_count = 10;
-  parameter sampling_freq_MHz = "80.0";
+  parameter bits_samples_count = 9;
+  parameter sampling_freq_MHz = "10.0";
   parameter samples_count = 2**(bits_samples_count+1);
-  parameter sample_width = 25;
+  parameter sample_width = 5;
   parameter PK_PER_DATA = ((sample_width-1)/8)+1;
   parameter all_bytes = PK_PER_DATA*samples_count;
-  parameter send_pattern_true = 1;
-  parameter BRAM_matrix_wide = 3;
+  parameter send_pattern_true = 0;
+  parameter BRAM_matrix_wide = 1;
   parameter BRAM_matrix_deep = 1;
   reg clk_ILA, spi_clk, reset_r;
   wire ss_r, miso_r, mosi_r;
   wire rst_sig = 1;
 
     ila_top #(
-      .USE_FEATURE_PATTERN(1),
       .sample_width(sample_width), 
       .sampling_freq_MHz(sampling_freq_MHz),
       .BRAM_matrix_wide(BRAM_matrix_wide),
       .BRAM_matrix_deep(BRAM_matrix_deep)
 
       ) UUT ( 
-        .i_clk(clk_ILA), 
         .i_sclk_ILA(spi_clk), 
         .i_ss_ILA(ss_r), 
         .i_mosi_ILA(mosi_r), 
@@ -96,7 +94,8 @@ module ila_top_tb;
 // #################################################################################################
 // # ********************************************************************************************* #
     // Input and output ports of the SUT 
-        .led(led_w)
+        .led(led_w),
+        .clk(clk_ILA) 
 // #################################################################################################        
         );
 
@@ -184,8 +183,8 @@ integer counter_break;
 
 reg cnt_end_save;
 
-reg [11:0] trigger_data = 12'b000011000001;
-reg [3:0] trigger_activation = 4'b0010;
+reg [11:0] trigger_data = 12'b000000000001;
+reg [3:0] trigger_activation = 4'b0001;
 
 reg start_new;
 

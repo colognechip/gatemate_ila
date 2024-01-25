@@ -213,7 +213,6 @@ elif args.main_action == actions[1]: # reconfig
     if usr_in in ['e', 'p']:
         exit()
     ILA_config_instance.set_config_ILA()
-    ILA_config_instance.set_config_ILA()
 
 
 elif args.main_action == actions[2]: # start

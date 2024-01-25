@@ -2,19 +2,17 @@
 
 module blink(
 		input wire clk,
-		//input wire rst,
-		//output [24:0] ila_sample_dut,
+		//input wire ILA_rst,
+		//output [4:0] ila_sample_dut,
 		output wire led
 	);
-
-
-
 
 	wire rst;
 	CC_USR_RSTN usr_rstn_inst (
    	.USR_RSTN(rst) // reset signal to CPE array
 );
-reg [24:0] counter;
+	assign rst = ILA_rst;
+reg [39:0] counter;
 // wire clk270, clk180, clk90, clk0, usr_ref_out;
 // wire usr_pll_lock_stdy, usr_pll_lock;
 
@@ -31,7 +29,7 @@ reg [24:0] counter;
 	//	.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out)
 	//);
 
-	assign led = counter[24];
+	assign led = counter[39];
 
 	always @(posedge clk)
 	begin
@@ -42,4 +40,5 @@ reg [24:0] counter;
 		end
 	end
 
+	
 endmodule

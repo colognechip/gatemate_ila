@@ -18,8 +18,6 @@ module bram_ila #(
     reg [WORD:0] memory [0:DEPTH];
     reg [WORD:0] pipeline [SIGNAL_SYNCHRONISATION:0];
 
-    assign pipeline[0] = di;
-
     generate
         genvar i;
         for (i = 0; i < SIGNAL_SYNCHRONISATION; i = i+1) begin : loop
@@ -29,6 +27,7 @@ module bram_ila #(
         end
     endgenerate
     always @(posedge clk) begin
+        pipeline[0] <= di;
     if (we) begin
         memory[addr_write] <= pipeline[SIGNAL_SYNCHRONISATION];
     end
