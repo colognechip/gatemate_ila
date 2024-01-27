@@ -997,7 +997,7 @@ class ILAConfig:
                     else:
                         self.clk_name = pll_signal_names[usr_in]
                         self.ILA_clk_from_DUT = True
-                        self.ILA_sampling_freq_MHz = found_pll[usr_in%4][0]
+                        self.ILA_sampling_freq_MHz = found_pll[int(usr_in/4)][0]
                         return
                 else:
                     print(os.linesep + "The value entered is not within the valid range."  + os.linesep)

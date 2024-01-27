@@ -27,17 +27,17 @@ module ila_top#(
     parameter SIGNAL_SYNCHRONISATION = 0,
     parameter USE_USR_RESET = 1, 
     parameter USE_PLL = 0,
-    parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 1024,
-    parameter bits_samples_count_before_trigger = 9,
-    parameter bits_samples_count = 10,
-    parameter sample_width = 20,
+    parameter USE_FEATURE_PATTERN = 1,
+    parameter samples_count_before_trigger = 2048,
+    parameter bits_samples_count_before_trigger = 10,
+    parameter bits_samples_count = 12,
+    parameter sample_width = 100,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "120",
-    parameter BRAM_matrix_wide = 1,
+    parameter sampling_freq_MHz = "100.0",
+    parameter BRAM_matrix_wide = 20,
     parameter BRAM_matrix_deep = 1,
-    parameter BRAM_single_wide = 20,
-    parameter BRAM_single_deep = 11,
+    parameter BRAM_single_wide = 5,
+    parameter BRAM_single_deep = 13,
     parameter clk_delay = 2
 )(
     (* clkbuf_inhibit *) input i_sclk_ILA,
@@ -47,7 +47,7 @@ module ila_top#(
 // # ********************************************************************************************* #
 // __Place~for~Signals~start__
 input clk,
-output led,
+output [3:0] led,
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -66,7 +66,7 @@ wire ILA_clk_src;
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
-blink DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .ila_sample_dut(sample));
+blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));

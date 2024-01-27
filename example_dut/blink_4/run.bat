@@ -1,13 +1,13 @@
 @echo off
 
 :: toolchain
-set YOSYS=../../bin/yosys/yosys.exe
-set PR=../../bin/p_r/p_r.exe
-set OFL=../../bin/openFPGALoader/openFPGALoader.exe
+set YOSYS=yosys.exe
+set PR=p_r.exe
+set OFL=openFPGALoader.exe
 
 :: project name and sources
-set TOP=blink
-set VLOG_SRC=src/blink.v
+set TOP=blink_4
+set VLOG_SRC=src/blink_4.v
 set VHDL_SRC=src/blink.vhd
 set LOG=0
 
