@@ -25,19 +25,19 @@
 
 module ila_top#(
     parameter SIGNAL_SYNCHRONISATION = 0,
-    parameter USE_USR_RESET = 0, 
+    parameter USE_USR_RESET = 1, 
     parameter USE_PLL = 0,
     parameter USE_FEATURE_PATTERN = 0,
-    parameter samples_count_before_trigger = 4096,
-    parameter bits_samples_count_before_trigger = 11,
-    parameter bits_samples_count = 13,
-    parameter sample_width = 40,
+    parameter samples_count_before_trigger = 1024,
+    parameter bits_samples_count_before_trigger = 9,
+    parameter bits_samples_count = 10,
+    parameter sample_width = 20,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "10.0",
-    parameter BRAM_matrix_wide = 8,
-    parameter BRAM_matrix_deep = 2,
-    parameter BRAM_single_wide = 5,
-    parameter BRAM_single_deep = 13,
+    parameter sampling_freq_MHz = "120",
+    parameter BRAM_matrix_wide = 1,
+    parameter BRAM_matrix_deep = 1,
+    parameter BRAM_single_wide = 20,
+    parameter BRAM_single_deep = 11,
     parameter clk_delay = 2
 )(
     (* clkbuf_inhibit *) input i_sclk_ILA,
@@ -66,9 +66,7 @@ wire ILA_clk_src;
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
-assign ILA_clk_src = clk;
-assign reset_DUT = USR_RSTN;
-blink DUT (.ILA_rst(reset_DUT), .clk(clk), .led(led), .ila_sample_dut(sample));
+blink DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
