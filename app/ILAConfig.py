@@ -442,7 +442,6 @@ class ILAConfig:
 
     def parse_DUT(self, file, config=True ):
         module_instance = "module " + self.SUT_top_name + "("
-        count_lines = 0
         found_begin_start = 0
         found_element = {
             "start": None,
@@ -541,7 +540,7 @@ class ILAConfig:
                         found_element["start"] = [code_lines, code_lines]
                     else:
                         in_moduls_instance = True
-                        found_begin_start = count_lines
+                        found_begin_start = code_lines
                 elif in_moduls_instance and line.rstrip().endswith(");"):
                     in_moduls_instance = False
                     found_element["start"] = [found_begin_start, code_lines]
@@ -628,7 +627,8 @@ class ILAConfig:
         table = PrettyTable()
         names = []
         table.field_names = ["#", "type", "range", "Name"]
-        for select_count, port_DUT in enumerate(self.ports_DUT):
+        select_count = 0
+        for port_DUT in self.ports_DUT:
             if "input" == port_DUT["Signal_type"]:
                 if port_DUT["Signal_range"] is not None:
                     table.add_row([select_count, port_DUT["Signal_type"], port_DUT["Signal_range"],
@@ -636,6 +636,7 @@ class ILAConfig:
                 else:
                     table.add_row([select_count, port_DUT["Signal_type"], 1,
                                    port_DUT["Signal_name"]])
+                select_count += 1
                 names.append(port_DUT["Signal_name"])
         print_table(word, table)
         return names
