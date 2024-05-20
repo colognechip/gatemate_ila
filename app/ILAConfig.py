@@ -496,11 +496,7 @@ class ILAConfig:
                                 found_element["pll"].append([out_clk_value, clk_signal_names_array, pll_name])
 
                                 print_pll = ["Pll name  = " + pll_name ,
-                                             "Frequency = " + out_clk_value + " MHz",
-                                             "CLK0      = " + clk_signal_names_array[0],
-                                             "CLK180    = " + clk_signal_names_array[1],
-                                             "CLK270    = " + clk_signal_names_array[2],
-                                             "CLK90     = " + clk_signal_names_array[3]]
+                                             "Frequency = " + out_clk_value + " MHz"]
 
                                 print(print_note(print_pll, " Found PLL instance "))
 
@@ -528,9 +524,7 @@ class ILAConfig:
                     if ");" == line.strip():
                         found_reset = False
                         found_element["reset"].append([found_begin_start, code_lines, reset_name])
-
-                        print_reset = ["Reset signal name = " + reset_name]
-                        print(print_note(print_reset, " Found user reset "))
+                        print("########### Found CC_USR_RSTN ###########")
                     else:
                         match = re.search(reset_pattern_signal, line)
                         if match:
@@ -978,11 +972,12 @@ class ILAConfig:
                     pll_instances = []
                     pll_signal_names = []
                     count = 0
+                    out_pll_signal = ["CLK0", "CLK180", "CLK270", "CLK90" ]
                     for number, pll in enumerate(found_pll):
                         pll_instances.append(pll[2] + ": " + pll[0] + " Mhz")
                         pll_instances += [""]
                         for signal in pll[1]:
-                            pll_instances.append(" " + str(count) + " = " + signal)
+                            pll_instances.append(" " + str(count) + " = " + out_pll_signal[count%4])
                             pll_signal_names.append(signal)
                             count += 1
                         pll_instances += [""]
@@ -1037,8 +1032,7 @@ class ILAConfig:
         print(" 2 = Deactivate this function.")
         if len(found_reset) > 0:
             options = 3
-            print(" 3 = Use the ouput signal from the CC_USR_RSTN primitive in your design. Found signal: '" +
-                  found_reset[0][2] + "' (The functionality of the CC_USR_RSTN primitive is still given).")
+            print(" 3 = Use the ouput signal from the CC_USR_RSTN primitive in your design. (The functionality of the CC_USR_RSTN primitive is still given).")
         else:
             options = 2
         print()
@@ -1553,10 +1547,13 @@ class ILAConfig:
         log_file = save_gl_dir + '/log/impl.log'
         p_r_command = PR + ' +sp -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
                       ccf_file_ila_source + '  > ' + log_file
+        
+        time.sleep(3)
         print(os.linesep + "Execute Implementation..." + os.linesep + "Output permanently saved to: " + log_file)
         if not execute_tool(p_r_command, output_file_p_r + '_00.cfg', log_file):
             return False
         self.toolchain_info = output_file_p_r + '_00.cfg'
+        time.sleep(5)
 
         return True
 
@@ -1595,7 +1592,7 @@ class ILAConfig:
         print()
         print("Upload to FPGA Board...")
         process = subprocess.Popen(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info, stderr=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, shell=True)
+                                   stdout=subprocess.PIPE, shell=True) 
         output, error = process.communicate()
         with open(save_gl_dir + '/log/ofl.log', 'w') as file:
             file.write(output.decode('utf-8'))

@@ -173,7 +173,7 @@ state_maschine : process (clk) is
 							break_counter <= 0;
 						end if;
 					when wait_break =>
-						if break_counter < 10000000 then
+						if break_counter < 2000000 then
 							break_counter <= break_counter+1;
 						else
 							TL_GOL_STATE <= next_gen;

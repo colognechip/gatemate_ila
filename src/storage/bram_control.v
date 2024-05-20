@@ -130,17 +130,17 @@ always @(posedge i_clk_ILA) begin
 end
 wire rd_nxt;
 
-wire initial_done_sig; 
+wire save_before_done_sig; 
 
-nedge_edge_detection initial_done_edge (.i_clk(i_clk_ILA), .i_reset(i_reset), .i_signal(addr_cnt_wd[bits_samples_count_before_trigger]), .o_nedge_edge(initial_done_sig));
+nedge_edge_detection save_before_done_edge (.i_clk(i_clk_ILA), .i_reset(i_reset), .i_signal(addr_cnt_wd[bits_samples_count_before_trigger]), .o_nedge_edge(save_before_done_sig));
 
-reg initial_done;
+reg save_before_done;
 
 always @(posedge i_clk_ILA) begin  
     if (!i_reset) begin
-        initial_done <= 0;
-    end else if (!initial_done & initial_done_sig) begin
-        initial_done <= 1;
+        save_before_done <= 0;
+    end else if (!save_before_done & save_before_done_sig) begin
+        save_before_done <= 1;
     end
 end
 
@@ -172,7 +172,7 @@ always @(posedge i_clk_ILA) begin
     if (!i_reset) begin
         make_wd_cnt <= 0;
     end
-    else if ((!write_done) & i_trigger_triggered & initial_done) begin
+    else if ((!write_done) & i_trigger_triggered & save_before_done) begin
         make_wd_cnt <= 1;
     end
     else begin
@@ -218,7 +218,7 @@ generate
         reg [7:0] send_byte_sync;
         localparam rest_send_byte = 8 - sample_width;
         always  @(posedge i_sclk) begin
-            if (!i_reset) begin 
+            if (!i_read_active) begin 
                 send_byte_sync <= 0;
             end
             else begin

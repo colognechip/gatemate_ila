@@ -207,22 +207,32 @@ class RuntimeInteractionManager:
 
 
     def change_pattern(self):
+        self.print_signals_test()
         self.trigger_mask = ""
         self.trigger_pattern = ""
         print(print_note(["Define the Bit-Pattern for Trigger Activation",
                                 "Set individual bits using '0' and '1'",
                                 "Set up a hex pattern using the key 'h' followed by hex values",
+                                "skip an indirect number of signals with ‘j’",
                                 "set all remaining signals to dont care with 'r'",
                                 "all other inputs set a single signal to dc"], " Pattern as trigger ", "!"))
 
         enter = '\r' if os.name == 'nt' else '\n'
         fill = False
         index_names = 0
-        while index_names <  len(self.all_signal_names):
+        while index_names < len(self.all_signal_names):
             if not fill:
-                print(self.all_signal_names[index_names] + ": ", end="", flush=True)
+                print(str(index_names) + " = " + self.all_signal_names[index_names] + ": ", end="", flush=True)
                 c = get_ch()
-                if c in ['0', '1']:
+                if c == -1:
+                    print()
+                    if index_names > 0:
+                        index_names = index_names - 2
+                        self.trigger_mask = self.trigger_mask[1:]
+                        self.trigger_pattern = self.trigger_pattern[1:]
+                    else:
+                        index_names = index_names - 1
+                elif c in ['0', '1']:
                     self.trigger_mask = '0' + self.trigger_mask
                     self.trigger_pattern = c + self.trigger_pattern
                     print(c)
@@ -231,38 +241,52 @@ class RuntimeInteractionManager:
                     hex_string = ""
                     while c != enter:
                         c = get_ch()
-                        print(c, end="", flush=True)
-                        if c in '0123456789abcdefABCDEF':
+                        char_cnt = len(hex_string)
+                        if c == -1:
+                            if char_cnt > 0:
+                                print('\b \b', end='', flush=True)
+                                hex_string = hex_string[:-1]
+                        elif c in '0123456789abcdefABCDEF':
+                            print(c, end="", flush=True)
                             hex_string += c
-                        else:
-                            bit_count = len(hex_string) * 4
-                            if bit_count > 0:
-                                binary_string = (bin(int(hex_string, 16))[2:]).zfill(bit_count)
-                                fill = True
-                                print(os.linesep + self.all_signal_names[index_names] + ": " + binary_string[-1])
-                                self.trigger_mask = '0' + self.trigger_mask
-                                self.trigger_pattern = binary_string[-1] + self.trigger_pattern
-                                binary_string = binary_string[:-1]
+                        elif char_cnt > 0 and c == enter:
+                            binary_string = (bin(int(hex_string, 16))[2:]).zfill(char_cnt*4)
+                            fill = True
+                            print(os.linesep + str(index_names) + " = " + self.all_signal_names[index_names] + ": " + binary_string[-1])
+                            self.trigger_mask = '0' + self.trigger_mask
+                            self.trigger_pattern = binary_string[-1] + self.trigger_pattern
+                            binary_string = binary_string[:-1]
+                elif c == "j":
+                    print(c, end="", flush=True)
+                    jmp_string = ""
+                    while c != enter:
+                        c = get_ch()
+                        char_cnt = len(jmp_string)
+                        if c == -1:
+                            if char_cnt > 0:
+                                print('\b \b', end='', flush=True)
+                                jmp_string = jmp_string[:-1]
+                        elif c in '0123456789':
+                            print(c, end="", flush=True)
+                            jmp_string += c
+                        elif char_cnt > 0 and c == enter:
+                            jmp_cnt = int(jmp_string)
+                            index_names += (jmp_cnt-1)
+                            self.trigger_mask = '1' * jmp_cnt + self.trigger_mask
+                            self.trigger_pattern = '1' * jmp_cnt + self.trigger_pattern
+                            print()
+
 
                 elif c == "r":
                     self.trigger_mask = self.trigger_mask.rjust(len(self.all_signal_names), '1')
                     self.trigger_pattern = self.trigger_pattern.rjust(len(self.all_signal_names), '1')
                     break
-                elif c == -1:
-                    print()
-                    if index_names > 0:
-                        index_names = index_names - 2
-                        self.trigger_mask = self.trigger_mask[1:]
-                        self.trigger_pattern = self.trigger_pattern[1:]
-                    else:
-                        index_names = index_names - 1
-
                 else:
                     self.trigger_mask = '1' + self.trigger_mask
                     self.trigger_pattern = '1' + self.trigger_pattern
                     print(c)
             else:
-                print(self.all_signal_names[index_names] + ": " + binary_string[-1])
+                print(str(index_names) + " = " + self.all_signal_names[index_names] + ": " + binary_string[-1])
                 self.trigger_mask = '0' + self.trigger_mask
                 self.trigger_pattern = binary_string[-1] + self.trigger_pattern
                 binary_string = binary_string[:-1]
@@ -277,7 +301,6 @@ class RuntimeInteractionManager:
             send_string += send_trigger_mask[i:i + 4] + send_trigger_pattern[i:i + 4]
         print(os.linesep)
         change_trigger_pattern = [204] + [int(send_string[i:i + 8], 2) for i in range(0, len(send_string), 8)]
-        #print("send: " + str(change_trigger_pattern))
         return change_trigger_pattern
 
 
@@ -353,7 +376,7 @@ class RuntimeInteractionManager:
 
 
                 except Exception as exception:
-                    #traceback.print_exc()
+                    traceback.print_exc()
                     print(print_note(["Invalid input. Please enter a valid int value.",
                                       "Entering 'e' exits the process.",
                                       "Enter 'p' for 'previous' to backtrack a step."
