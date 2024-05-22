@@ -1,6 +1,10 @@
 # Integrated logic analyser (ILA) for the GateMate FPGA from Cologne Chip
 With the ILA, you can perform in-system debugging of your designs on the GateMate FPGA during runtime. It allows you to capture and analyze all signals of your design as a waveform directly within the FPGA, while it is configured with your design. This means, for example, that you can monitor complex data flows in real-time and troubleshoot errors efficiently without disrupting the normal operation of your system.
 
+## Video Demonstration
+
+[![Watch the video](images/vimeo_video.png)](https://vimeo.com/949058473)
+
 ## Benefits of the ILA
 
 - Simultaneously analyze over 1000 bits from all signals in your Device Under Test (DUT).
