@@ -3,7 +3,7 @@ With the ILA, you can perform in-system debugging of your designs on the GateMat
 
 ## Video Demonstration
 
-[![Watch the video](images/vimeo_video.png)](https://vimeo.com/949058473)
+[![Watch the video](images/vimeo_video.png)](https://www.youtube.com/watch?v=TZblFccw4kg)
 
 ## Benefits of the ILA
 
