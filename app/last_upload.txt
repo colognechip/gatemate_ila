@@ -1,1 +1,1 @@
-save_config/ila_config_ws2812_gol_24-05-20_10-19-04.json
+save_config/ila_config_blink_24-07-02_08-50-19.json

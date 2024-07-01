@@ -5,7 +5,7 @@ from ILAConfig import ILAConfig
 from pyftdi.ftdi import Ftdi
 from config import print_note
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 actions = ['config', 'reconfig', 'start']
 ArgEpilog ='''
 example usage:
@@ -86,8 +86,10 @@ main_actions_config_parser.add_argument('-opt', dest='opt', action='store_true',
                help='This optimizes the design by deleting all unused signals before signal evaluation.')
 
 main_actions_reconfig_parser_start = main_actions.add_parser(actions[2])
+main_actions_reconfig_parser_start.add_argument('-s', dest='swc', action='store_true', default=False, required=False,
+                                                help='starts the ILA runtime environment without reconfiguring the FPGA')
 main_actions_reconfig_parser_reconfig = main_actions.add_parser(actions[1])
-main_actions_reconfig_parser_reconfig.add_argument('-l', dest='load', type=str, metavar='[filename].json', required=True,
+main_actions_reconfig_parser_reconfig.add_argument('-l', dest='load', type=str, metavar='[filename].json', required=False,
                help='JSON file containing the configurations of the ILA')
 args = p.parse_args()
 
@@ -116,6 +118,8 @@ lizenz = '''
 '''
 
 print(lizenz)
+
+config_FPGA = True
 
 if len(sys.argv) == 1:
     p.print_help(sys.stderr)
@@ -193,7 +197,16 @@ if args.main_action == actions[0]: # config
 
 elif args.main_action == actions[1]: # reconfig
     file_name = args.load
-    if not os.path.exists(file_name):
+    print(file_name)
+    if file_name == None:
+        with open("last_upload.txt", 'r') as file:
+            content = file.read()
+            if len(content) > 5:
+                file_name = content
+                ILA_config_instance, config_check = ILAConfig.load_from_json(content)
+            else:
+                print("No configuration file was found for the ILA!")
+    elif not os.path.exists(file_name):
         print("ERROR! No correct file was passed!")
         exit()
     ILA_config_instance, config_check = ILAConfig.load_from_json(file_name)
@@ -223,6 +236,9 @@ elif args.main_action == actions[2]: # start
             ILA_config_instance, config_check = ILAConfig.load_from_json(content)
         else:
             print("No configuration file was found for the ILA!")
+    if args.swc:
+        config_FPGA = False
+
 else:
     p.print_help(sys.stderr)
     exit()
@@ -245,8 +261,10 @@ if args.main_action != actions[2]:
         with open("last_upload.txt", 'w') as file:
             file.write(file_name)
 
-if not ILA_config_instance.upload():
-    exit()
+
+if config_FPGA:
+    if not ILA_config_instance.upload():
+        exit()
 
 ILA_user = RuntimeInteractionManager(int(float(ILA_config_instance.ILA_sampling_freq_MHz) * 1000000),
                                      ILA_config_instance.samples_count_before_trigger,

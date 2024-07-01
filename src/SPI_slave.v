@@ -28,33 +28,29 @@ module spi_slave(
     input i_ss,
     input i_mosi,
     input i_echo,
-    input [7:0] i_byte_send,
+    input [3:0] i_nib_send,
     output o_miso,
-    output o_rec_byte_ready,
-    output [7:0] o_byte_rec
+    output reg o_rec_nib_ready,
+    output reg [3:0] o_nib_rec
 );
 
 
-reg [7:0] tx_shift_reg;
-reg [7:0] rx_shift_reg;
-reg [2:0] bit_cnt;
-reg end_byte_s, end_byte_rec_read;
-reg [7:0] o_byte_rec_reg;
-
-wire [7:0] send_byte;
+reg [3:0] tx_shift_reg;
+reg [3:0] rx_shift_reg;
+reg [1:0] bit_cnt;
 
 
 always @(posedge i_sclk) begin
     if (i_ss) begin
         rx_shift_reg <= 0;
     end else begin    
-        rx_shift_reg <= {rx_shift_reg[6:0], i_mosi};
+        rx_shift_reg <= {rx_shift_reg[2:0], i_mosi};
     end
 end
 
 always @(posedge i_sclk) begin
     if (i_ss) begin
-        bit_cnt <= 3'b111;
+        bit_cnt <= 2'b11;
     end
     else begin
         bit_cnt <= bit_cnt + 1'b1;
@@ -65,39 +61,25 @@ end
 always @(negedge i_sclk) 
 begin
     if (i_ss) begin
-        end_byte_s <= 0;
-        o_byte_rec_reg <= 0;
-    end
-    else if (bit_cnt == 3'b111) begin
-        end_byte_s <= 1;
-        o_byte_rec_reg <= rx_shift_reg;
-    end
-    else begin
-        end_byte_s <= 0;
-    end
-end
-
-
-assign o_rec_byte_ready = end_byte_s;
-
-assign o_byte_rec = o_byte_rec_reg;
-
-assign send_byte = i_echo ? o_byte_rec_reg : i_byte_send;
-
-always @(posedge i_sclk) 
-begin
-    if (i_ss) begin
+        o_rec_nib_ready <= 0;
+        o_nib_rec <= 0;
         tx_shift_reg <= 0;
     end
-    else if (end_byte_s) begin
-        tx_shift_reg <= send_byte;
+    else if (bit_cnt == 2'b11) begin
+        o_rec_nib_ready <= 1;
+        o_nib_rec <= rx_shift_reg;
+        if (i_echo) begin
+            tx_shift_reg <= rx_shift_reg;
+        end else begin
+            tx_shift_reg <= i_nib_send;
+        end
     end
     else begin
-        tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
+        o_rec_nib_ready <= 0;
+        tx_shift_reg <= {tx_shift_reg[2:0], 1'b0};
     end
 end
 
-
-assign o_miso = tx_shift_reg[7];
+assign o_miso = tx_shift_reg[3];
 
 endmodule

@@ -45,6 +45,7 @@ With the ILA, you can perform in-system debugging of your designs on the GateMat
   - [Sample Compare Pattern](#sample-compare-pattern)
   - [Synchronization Level](#synchronization-level)
   - [Optimization](#optimization)
+- [Use with the Olimex GateMateA1 EVB](#use-with-the-olimex-gatematea1-EVB)
 - [Usage](#usage)
   - [Trigger condition](#trigger-condition)
   - [ILAcop parameters and options](#ilacop-parameters-and-options)
@@ -169,10 +170,10 @@ In the following the files of the  ILA and their functions are explained:
 ### Installation of external python packages
 The ILA file app/requirements.txt contains a list of external Python packages that
 are required for the execution of ILAcop. These packages are:
-- numpy
 - pyftdi
 - pyvcd
 - prettytable
+- pyusb
 
 One way to install the requirement is to use the python package management software `pip`. 
 
@@ -468,6 +469,16 @@ Determines the number of register levels through which the signals to be analyze
 Optimizes the design by deleting all unused signals before signal evaluation.
 
 
+
+## Use with the Olimex GateMateA1 EVB
+
+To use the ILA with the Olimex GateMateA1-EVB via the rp2040 (dirtyJTAG firmware) you have to change the following lines in the `app/config.py` file:
+<pre>
+UPLOAD_FLAGS = ' -b olimex_gatemateevb '
+CON_DEVICE = 'oli'
+</pre>
+
+
 ## Usage
 
 ### Trigger condition
@@ -608,6 +619,9 @@ $ > python3 ILAcop.py reconfig -l ila_config_name_year_month_day_hour_minute_sec
 </pre>
 
 If a reconfiguration is performed, the capture duration before and after trigger must be redefined, because the capture times may change due to changes in the signals and frequency to be analysed.
+
+if you do not pass a file with -l, the ILA will be reconfigured with the last configuration carried out.
+
 More information about the JSON file in: [JSON File](#json-file).
 
 

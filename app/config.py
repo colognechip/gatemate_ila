@@ -25,18 +25,41 @@
 YOSYS = 'yosys'
 YOSYS_FLAGS = '-nomx8'
 PR = 'p_r'
-PR_FLAGS = '-cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
+PR_FLAGS = '-sp -cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
 UPLOAD = 'openFPGALoader'
-UPLOAD_FLAGS = ' -b gatemate_evb_jtag '
+UPLOAD_FLAGS = ' -b gatemate_evb_jtag ' # gatemate_evb_jtag,  olimex_gatemateevb
 REPRESENTATION_SOFTWARE = ['gtkwave']
 REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
-CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm',  freely customisable mode = 'cust', without leveshifter 'free'
+CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm', Olimex = 'oli'  freely customisable mode = 'cust', without leveshifter 'free'
 CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1',
 available_BRAM = 60
 freq_max = 10000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
 cust_gpio_direction_pins = 0x17F0
 cust_gpio_direction = 0x1710
 cust_gpio_write = 0x0210
+# dirty JTAG config
+DIRTYJTAG_CMD = {"CMD_STOP" : 0x00, "CMD_INFO" : 0x01,
+                  "CMD_FREQ" : 0x02, "CMD_XFER" : 0x03,
+                  "CMD_SETSIG": 0x04, "CMD_GETSIG" : 0x05, "CMD_CLK" : 0x06 }
+DIRTYJTAG_VID = 0x1209
+DIRTYJTAG_PID = 0xC0CA
+
+DIRTYJTAG_SIG = {
+    "SIG_TCK" : 1 << 1,
+    "SIG_TDI" : 1 << 2,
+    "SIG_TDO" : 1 << 3,
+    "SIG_TMS" : 1 << 4,
+    "SIG_TRST" : 1 << 5,
+    "SIG_SRST" : 1 << 6
+}
+DIRTYJTAG_TIMEOUT = 1000
+
+DIRTYJTAG_WRITE_EP = 0x01
+DIRTYJTAG_READ_EP = 0x82
+
+JTAG_freg = 6000000
+
+
 def print_table(word, table):
     table_string = table.get_string()
     max_width = max(len(line) for line in table_string.splitlines())

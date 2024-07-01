@@ -42,7 +42,7 @@ module bram_control#(
     input [(sample_width-1):0] i_sample,
     input i_slave_end_byte_post_edge,
     input i_trigger_triggered,
-    output [7:0] o_send_byte,
+    output [3:0] o_send_nib,
     output o_write_done,
     input  [5:0] trigger_row,
     output [(BRAM_single_wide-1):0] trigger_out
@@ -65,7 +65,8 @@ reg [((local_BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd, addr_cnt_wd_pip;
 
 reg [bits_samples_count:0] wd_counter;
 wire i_clk_BRAM;
-
+wire read_clk;
+assign read_clk = !i_sclk;
 assign i_clk_BRAM = !i_clk_ILA;
 wire [(BRAM_single_wide-1):0] data_in_pipe  [(BRAM_matrix_wide-1):0];
 wire [(BRAM_matrix_deep-1):0] we_BRAM;
@@ -98,7 +99,7 @@ generate
                         .ADDR_WIDTH(local_BRAM_single_deep),
                         .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) 
             ila_bram   (.clk(i_clk_BRAM),
-                        .rclk(i_sclk), 
+                        .rclk(read_clk), 
                         .we(we_BRAM[i]),
                         .di(data_in_pipe[j]),
                         .addr_read(addr_cnt_rd[local_BRAM_single_deep-1:0]),
@@ -159,6 +160,7 @@ end
 always @(posedge i_clk_ILA) begin
     if (!i_reset) begin
         addr_cnt_wd <= 0;
+        addr_cnt_wd_pip <= 0;
     end
     else if (!write_done) begin
         addr_cnt_wd <= addr_cnt_wd + 1;
@@ -208,24 +210,24 @@ assign o_write_done = write_done;
 
 
 generate
-    if (sample_width > 8) begin 
+    if (sample_width > 4) begin 
         smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_sclk), .i_read_active(i_read_active), 
                                                         .i_ram_sample(RAM_smp_out),
                                                         .i_slave_end_byte_post_edge(i_slave_end_byte_post_edge),
-                                                        .o_send_byte(o_send_byte), .o_rd(rd_nxt));
+                                                        .o_send_nib(o_send_nib), .o_rd(rd_nxt));
     end
     else begin
-        reg [7:0] send_byte_sync;
+        reg [3:0] send_nib_sync;
         localparam rest_send_byte = 8 - sample_width;
         always  @(posedge i_sclk) begin
             if (!i_read_active) begin 
-                send_byte_sync <= 0;
+                send_nib_sync <= 0;
             end
             else begin
-                send_byte_sync <= {{rest_send_byte{1'b0}}, RAM_smp_out};
+                send_nib_sync <= {{rest_send_byte{1'b0}}, RAM_smp_out};
             end
         end
-        assign o_send_byte = send_byte_sync;
+        assign o_send_nib = send_nib_sync;
         assign rd_nxt = i_slave_end_byte_post_edge;
     end
 endgenerate

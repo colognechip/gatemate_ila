@@ -18,7 +18,7 @@ reg [24:0] counter;
 
 	CC_PLL #(
 		.REF_CLK("10.0"),    // reference input in MHz
-		.OUT_CLK("120"),   // pll output frequency in MHz
+		.OUT_CLK("20"),   // pll output frequency in MHz
 		.PERF_MD("SPEED"), // LOWPOWER, ECONOMY, SPEED
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant

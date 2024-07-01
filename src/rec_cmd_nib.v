@@ -30,49 +30,20 @@ module rec_cmd_nib#(
 )
 (
     input i_clk,
-    input i_reset,
-    input i_ready_read,
-    input [7:0] i_Byte,
-    input i_done,
-    output [3:0] o_data,
-    output o_hold
+    input i_wr_en,
+    input [3:0] i_nib,
+    output reg o_hold
 );
 
-reg start;
-reg hold;
-reg [3:0] data;
-
+wire addr_sig;
+assign addr_sig = (ADDR == i_nib);
 
 always @(posedge i_clk) begin
-    if (!i_reset) begin
-        start <= 0;
-    end else if(ADDR == i_Byte[7:4]) begin
-        start <= 1;
-    end
-    else begin
-        start <= 0;
+    if (!i_wr_en) begin
+        o_hold <= 0;
+    end else begin
+        o_hold <= addr_sig;
     end
 end
-
-always @(posedge i_clk) begin
-    if (!i_reset | i_done) begin
-        hold <= 0;
-    end 
-    else if (start & i_ready_read) begin
-        hold <= 1;
-    end
-end
-
-always @(posedge i_clk) begin
-    if (!i_reset) begin
-        data <= 0;
-    end 
-    else if (start & i_ready_read) begin
-        data <= i_Byte[3:0];
-    end
-end
-
-assign o_hold = hold;
-assign o_data = data;
 
 endmodule

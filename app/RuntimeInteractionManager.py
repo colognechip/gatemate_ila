@@ -26,7 +26,6 @@ import sys, os, argparse
 from pathlib import Path
 from vcd import VCDWriter
 import datetime
-import numpy as np
 from communication import Communication
 import subprocess
 import traceback, threading
@@ -120,13 +119,16 @@ class RuntimeInteractionManager:
     project_name = ''
     trigger_pattern = ""
     trigger_mask = ""
+    const_trigger_all = [{"activation": 0b00000000,
+                             "trigger": (0b10010000, 0), "trigger_clear": 0,
+                             "pattern_msg": None, "trigger_act": 0}]
 
     def __init__(self, an_freq=40000000, smp_before=100, smp_after=1000, signale=[], project_name = "test",
                  with_pattern=False, bram_single_wide = 5, bram_matrix_wide = 1, use_reset_function = False):
         self.use_reset_function = use_reset_function
         if self.use_reset_function:
             self.menu_options.append('reset DUT (hold the DUT in reset until the capture starts)')
-        self.trigger_all = [{"activation" : 0b00110000, "trigger" : (0b10010000, 0), "trigger_clear": 0}]
+        self.trigger_all = self.const_trigger_all
         self.project_name = project_name
         self.analysis_frequency = an_freq
         self.count_samples[0] = smp_before
@@ -139,8 +141,9 @@ class RuntimeInteractionManager:
             self.trigger_activations.append('pattern')
         self.status = 1
         self.count_samples_total = self.count_samples[0] + self.count_samples[1]
-        self.bytes_per_sample = int(self.signal_count / 8) + int((self.signal_count % 8) > 0)
-        self.bytes_per_msg = self.count_samples_total * self.bytes_per_sample
+        self.nibbles_per_sample = int(self.signal_count / 4) + int((self.signal_count % 4) > 0)
+        self.nibbles_per_msg = self.count_samples_total * self.nibbles_per_sample
+        self.bytes_per_msg = (self.nibbles_per_msg / 2) + (self.nibbles_per_msg % 2)
         self.delta_time_ps = int((10 ** 12) / self.analysis_frequency)               # 1 ps
         self.com = Communication(self.bytes_per_msg, self.analysis_frequency)
         self.trigger_pattern = '1' * self.signal_count
@@ -167,8 +170,6 @@ class RuntimeInteractionManager:
                 exit()
 
     def run(self):
-        if self.status == 0 or self.com.statue == False:
-            exit()
         print(print_note(["Trigger at sample no.: " + str(self.count_samples[0]-9),
                                 "Defined analysis frequency: " + str(self.analysis_frequency) + " Hz"]))
         while True:
@@ -190,9 +191,10 @@ class RuntimeInteractionManager:
                     self.change_trigger_config()
                 elif option == 2:
                     self.get_signals()
+                    self.com.send_reset_ila()
                 elif option == 3:
                     self.com.send_reset_ila()
-                    self.trigger_all = [{"activation": 0b00110000, "trigger": (0b10010000, 0), "trigger_clear": 0}]
+                    self.trigger_all = self.const_trigger_all
                     self.trigger_mask =  '1' * self.signal_count
                 elif option == 4 and self.use_reset_function:
                     self.com.reset_DUT()
@@ -294,13 +296,14 @@ class RuntimeInteractionManager:
                     fill = False
             index_names = index_names + 1
         extra_bits = 4 - (self.signal_count % 4) if (self.signal_count % 4) != 0 else 0
-        send_trigger_mask = '1' * extra_bits + self.trigger_mask
-        send_trigger_pattern = '1' * extra_bits + self.trigger_pattern
+        send_trigger_mask = '0' * extra_bits + self.trigger_mask
+        send_trigger_pattern = '0' * extra_bits + self.trigger_pattern
         send_string = ""
         for i in range(0, len(send_trigger_mask), 4):
             send_string += send_trigger_mask[i:i + 4] + send_trigger_pattern[i:i + 4]
         print(os.linesep)
-        change_trigger_pattern = [204] + [int(send_string[i:i + 8], 2) for i in range(0, len(send_string), 8)]
+        change_trigger_pattern = [0b00110011] + [int(send_string[i:i + 8], 2) for i in range(0, len(send_string), 8)]
+        #self.com.send_msg(change_trigger_pattern)
         return change_trigger_pattern
 
 
@@ -316,13 +319,14 @@ class RuntimeInteractionManager:
             iteration = 1
             count = 0
             while not all_in:
+                pattern_msg = None
                 try:
                     if step == 0:
                         self.trigger_all = []
                         self.trigger_mask =  '1' * self.signal_count
                         usr_in = input(os.linesep + 'Number of sequences (int, > 0): ')
                         if usr_in == 'e':
-                            self.trigger_all = [{"activation" : 0b00110000, "trigger" : (0b10010000, 0), "trigger_clear":0}]
+                            self.trigger_all = self.const_trigger_all
                             self.trigger_mask =  '1' * self.signal_count
                             return
                         elif usr_in == 'p':
@@ -342,8 +346,9 @@ class RuntimeInteractionManager:
                                     trigger_act = usr_in
                         else:
                             if trigger_act == 2:
-                                trigger_send = tuple(self.change_pattern())
-                                trigger = 0
+                                pattern_msg = self.change_pattern()
+                                trigger_send = (0b10010000, 0b00000000)
+                                trigger = [self.trigger_pattern, self.trigger_mask]
                                 state_in = True
                             else:
                                 self.print_signals_test()
@@ -354,12 +359,15 @@ class RuntimeInteractionManager:
                                     trigger = int(usr_in)
                                     trigger_row = int(trigger / self.bram_single_wide)
                                     trigger_column = trigger % self.bram_single_wide
-                                    trigger_send = ((144 | (trigger_row >> 2)), (((trigger_row & 0x3) << 6) | trigger_column))
+                                    trigger_send = ((0b10010000 | (trigger_row >> 2)),
+                                                    (((trigger_row & 0x3) << 6) | (trigger_column & 0x3F)))
                             if state_in:
-                                self.trigger_all.append({"activation" : (0b00110000 | trigger_act), "trigger" :  trigger_send, "trigger_clear":trigger })
+                                self.trigger_all.append({"activation" : ((trigger_act << 4) & 0xFF) ,
+                                                         "trigger" :  trigger_send, "trigger_clear":trigger,
+                                                         "pattern_msg" : pattern_msg, "trigger_act" : trigger_act})
                                 count += 1
                         if usr_in == 'e':
-                            self.trigger_all =  [{"activation" : 0b00110000, "trigger" : (0b10010000, 0), "trigger_clear":0}]
+                            self.trigger_all =  self.const_trigger_all
                             self.trigger_mask = '1' * self.signal_count
                             return
                         elif usr_in == 'p':
@@ -415,10 +423,18 @@ class RuntimeInteractionManager:
         for count, trig_set in enumerate(self.trigger_all):
             notes.append("")
             notes.append(" Sequences Number: " + str(count+1))
-            if (trig_set["activation"] >> 4) == 3:
-                notes.append("    trigger activation: " + self.trigger_activations[(trig_set["activation"] & 0x0F)])
-                if (trig_set["activation"] & 0x0F) != 2:
-                    notes.append("    trigger signal:     " + str(self.all_signal_names[trig_set["trigger_clear"]]))
+            notes.append("    trigger activation: " + self.trigger_activations[(trig_set["trigger_act"] & 0x0F)])
+            if trig_set["trigger_act"] == 2:
+                print_pattern = "|"
+                for pattern_bit in range(len(self.all_signal_names)):
+                    if trig_set["trigger_clear"][1][pattern_bit] == '1':
+                        print_pattern = "|DC" + print_pattern
+                    else:
+                        print_pattern = "| " + str(trig_set["trigger_clear"][0][pattern_bit]) + print_pattern
+                print_pattern = "    trigger patter: " + print_pattern
+                notes.append(print_pattern)
+            else:
+                notes.append("    trigger signal:     " + str(self.all_signal_names[trig_set["trigger_clear"]]))
 
 
         print(print_note(notes,
@@ -438,7 +454,7 @@ class RuntimeInteractionManager:
                 if self.trigger_mask[len(self.all_signal_names) - counter] == '1':
                     table.add_row([(counter - 1), names, "dc"])
                 else:
-                    table.add_row([counter, names, self.trigger_pattern[len(self.all_signal_names) - counter]])
+                    table.add_row([(counter-1), names, self.trigger_pattern[len(self.all_signal_names) - counter]])
         else:
             table.field_names = ["#", "Name"]
             for counter, names in enumerate(self.all_signal_names):
@@ -450,7 +466,6 @@ class RuntimeInteractionManager:
 
 
     def creatVCD(self, byte_arr, file_name):
-        del byte_arr[0]
         print(print_note([file_name],
                          " create vcd file "))
         pathname = os.path.dirname(sys.argv[0])
@@ -464,15 +479,43 @@ class RuntimeInteractionManager:
                                                               size=self.signal_names[x][1]))
                 counter_var = writer.register_var('ILA_Signals', 'smp_cnt_ILA', 'integer',
                                                       size=(self.count_samples_total.bit_length() + 1))
-                samples = np.reshape(byte_arr, (self.count_samples_total, self.bytes_per_sample))
-                #samples = np.roll(samples, -3, axis=0)
-                #samples = samples[:-3]
-                for sample_counter in range(len(samples)):  # go through all samples
+                nibbles = []
+                start = True
+                for bytes in byte_arr:
+                    nibble_2 = bytes & 0x0F
+                    nibble_1 = (bytes & 0xF0) >> 4
+                    if start:
+                        if (nibble_1 & 0xF) == 0b1110:
+                            start = False
+                            nibbles.append(nibble_2)
+                        elif (nibble_2 & 0xF) == 0b1110:
+                            start = False
+                    else:
+                        nibbles.append(nibble_1)
+                        nibbles.append(nibble_2)
+
+                z = 0
+                if len(nibbles) < self.nibbles_per_msg:
+                    print("Error during data transmission. The signals may not be recoded correctly. "
+                          "confirm with enter to continue.")
+                    input()
+                    nibbles += ([0b0000] * (self.nibbles_per_msg - len(nibbles) + 1))
+
+                samp_arr = []
+                for y in range(self.count_samples_total):
+                    samp_arr.append(0)
+                    for x in range(self.nibbles_per_sample):
+                        samp_arr[y] |= (nibbles[z] << (4 * x))
+                        z += 1
+
+
+                samp_arr = samp_arr[-1:] + samp_arr[:-1]
+                for sample_counter in range(len(samp_arr)):  # go through all samples
                     bit_counter = 0
                     for signal_name_index in range(len(self.signal_names)):  # go through all defined signals and vectors
                         self.signal_names[signal_name_index][2] = ""
                         for _ in range(self.signal_names[signal_name_index][1]):
-                            self.signal_names[signal_name_index][2] = str((samples[sample_counter][int(bit_counter / 8)] >> (bit_counter % 8)) & 1) + \
+                            self.signal_names[signal_name_index][2] = str((samp_arr[sample_counter] >> bit_counter ) & 1) + \
                                                       self.signal_names[signal_name_index][2]
                             bit_counter = bit_counter + 1
                         writer.change(writer_signals[signal_name_index], self.delta_time_ps * sample_counter, self.signal_names[signal_name_index][2])

@@ -251,7 +251,8 @@ class ILAConfig:
         self.explanation_DUT_BRAMS = "BRAMS in use by the DUT"
         self.DUT_BRAMS_20k = 0
         self.DUT_BRAMS_40k = 0
-
+        self.external_clk_pin = False
+        self.external_clk_pin_name = ""
         self.DUT_file_name_flat = None
         self.bram_single_wide = 1
         self.bram_matrix_wide = 1
@@ -930,6 +931,7 @@ class ILAConfig:
         print(print_note(["In the following, a clock source for the ILA should be selected.",
                           "Usually, the same clk signal that clocks the tested signals suffices."],
                          " NOTE ", '!'))
+
         while True:
             print()
             print("Here are the possible ways to provide a clock to the ILA:" + os.linesep)
@@ -1001,6 +1003,7 @@ class ILAConfig:
                 print(os.linesep + "Please enter a valid number." + os.linesep)
 
     def choose_external_clk(self):
+
         while True:
             if self.clk_name is not None:
                 print(print_note(['Input serves as ILA clk source: "' + self.clk_name + '"'],
@@ -1008,6 +1011,17 @@ class ILAConfig:
                 response = input("Do you want to change the clk source? (y:yes/N:no): ").lower()
                 if response != 'y':
                     return response
+            print()
+            response = input("Do you want to select a clk signal from the DUT's inputs? (Y:yes/n:no):  ").lower()
+            print()
+            if response in ['e', 'p']:
+                return response
+            if response == 'n':
+                self.external_clk_pin_name = input(
+                    "Enter a pin to be used as the clk source for the ILA. (e.g. 'IO_SB_A8'): ")
+                self.external_clk_pin = True
+                self.clk_name = "ILA_clk_new_source"
+                return ''
             names = self.print_inputs_DUT()
             in_state, usr_in = get_port_idx(os.linesep + "Choose the clock signal: ", len(names))
             if not in_state:
@@ -1506,6 +1520,8 @@ class ILAConfig:
                 f"parameter SIGNAL_SYNCHRONISATION = {str(self.sync_level)}")
             start_index = content.find(start_comment_signals) + len(start_comment_signals)
             end_index = content.find(end_comment_signals)
+            if self.external_clk_pin:
+                insert_str = insert_str + 'input ILA_clk_new_source,' + os.linesep
             if start_index != -1 and end_index != -1:
                 content = content[:start_index] + insert_str + content[end_index:]
             start_index = content.find(start_comment_SUT) + len(start_comment_SUT)
@@ -1524,6 +1540,9 @@ class ILAConfig:
             content = file.read()
             start_index = content.find(start_marker) + len(start_marker)
             content = content[:start_index] + os.linesep + all_lines
+            if self.external_clk_pin:
+                content = content + os.linesep + 'Pin_in "ILA_clk_new_source" Loc = "'+self.external_clk_pin_name +\
+                          '" | SCHMITT_TRIGGER=true;'
 
         with open(ccf_file_ILA_source, "w") as file:
             file.write(content)
@@ -1560,49 +1579,91 @@ class ILAConfig:
     def upload(self):
         save_dir = os.getcwd()
         save_gl_dir = os.path.dirname(save_dir)
-        with io.StringIO() as buf, redirect_stdout(buf):
-            Ftdi.show_devices()
-            output = buf.getvalue()
-        device = re.findall(r'ftdi://\S+', output)
+        from config import CON_DEVICE
+        if CON_DEVICE != 'oli':
+            with io.StringIO() as buf, redirect_stdout(buf):
+                Ftdi.show_devices()
+                output = buf.getvalue()
+            device = re.findall(r'ftdi://\S+', output)
 
-        if len(device) <= 1:
-            print("No device found!")
-            print(
+            if len(device) <= 1:
+                print("No device found!")
+                print(
                 "Please connect the device and restart the program." + os.linesep + "Your config is save, simply restart with: "
                 + os.linesep + "python3 ILAcop.py start")
-            return False
-        from config import CON_DEVICE, CON_LINK, UPLOAD, UPLOAD_FLAGS
-        from pyftdi.spi import SpiController
-        spi = SpiController()
-        spi.configure(CON_LINK, turbo=True)
-        gpio = spi.get_gpio()
-        if CON_DEVICE == 'evb':
-            gpio.set_direction(pins=0x09F0, direction=0x0110)
-            gpio.write(0x0000)
-            time.sleep(0.01)
-            gpio.write(0x0010)
-            time.sleep(0.01)
-        elif CON_DEVICE == 'pgm':
-            gpio.set_direction(pins=0x17F0, direction=0x1710)
-            gpio.write(0x0010)
-            time.sleep(0.01)
-            gpio.write(0x0210)
-            time.sleep(0.01)
-        spi.close()
-        print()
-        print("Upload to FPGA Board...")
-        process = subprocess.Popen(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info, stderr=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, shell=True) 
-        output, error = process.communicate()
-        with open(save_gl_dir + '/log/ofl.log', 'w') as file:
-            file.write(output.decode('utf-8'))
-        ofl_error = error.decode('utf-8')
-        if "failed" in ofl_error.lower():
-            print("Execute openFPGALoader command:")
-            print(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info)
-            print(output.decode("utf-8"))
-            print(os.linesep + "Error: " + os.linesep)
-            print(ofl_error)
-            return False
+                return False
+            from config import CON_LINK
+            from pyftdi.spi import SpiController
+            spi = SpiController()
+            spi.configure(CON_LINK, turbo=True)
+            gpio = spi.get_gpio()
+            if CON_DEVICE == 'evb':
+                gpio.set_direction(pins=0x09F0, direction=0x0110)
+                gpio.write(0x0000)
+                time.sleep(0.01)
+                gpio.write(0x0010)
+                time.sleep(0.01)
+            elif CON_DEVICE == 'pgm':
+                gpio.set_direction(pins=0x17F0, direction=0x1710)
+                gpio.write(0x0010)
+                time.sleep(0.01)
+                gpio.write(0x0210)
+                time.sleep(0.01)
+            spi.close()
         else:
-            return True
+            import usb.core
+            from config import DIRTYJTAG_VID, DIRTYJTAG_PID, DIRTYJTAG_CMD, DIRTYJTAG_SIG, DIRTYJTAG_WRITE_EP, DIRTYJTAG_TIMEOUT
+            self.dev = usb.core.find(idVendor=DIRTYJTAG_VID, idProduct=DIRTYJTAG_PID)
+            buf = bytearray([
+                DIRTYJTAG_CMD["CMD_SETSIG"],
+                DIRTYJTAG_SIG["SIG_SRST"],
+                0,
+                DIRTYJTAG_CMD["CMD_STOP"]
+            ])
+            try:
+                self.dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
+            except usb.core.USBError as e:
+                print(f"set Signal failed {e}")
+                return -1
+            time.sleep(0.01)
+            buf = bytearray([
+                DIRTYJTAG_CMD["CMD_SETSIG"],
+                DIRTYJTAG_SIG["SIG_SRST"],
+                DIRTYJTAG_SIG["SIG_SRST"],
+                DIRTYJTAG_CMD["CMD_STOP"]
+            ])
+            try:
+                self.dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
+            except usb.core.USBError as e:
+                print(f"set Signal failed {e}")
+                return -1
+            self.dev.reset()
+            time.sleep(0.5)
+
+
+        while True:
+            print()
+            print("Upload to FPGA Board...")
+            from config import UPLOAD, UPLOAD_FLAGS
+            process = subprocess.Popen(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info, stderr=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+            with open(save_gl_dir + '/log/ofl.log', 'w') as file:
+                file.write(output.decode('utf-8'))
+            ofl_error = error.decode('utf-8')
+            if "failed" in ofl_error.lower():
+                print("Execute openFPGALoader command:")
+                print(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info)
+                print(output.decode("utf-8"))
+                print(os.linesep + "Error: " + os.linesep)
+                print(ofl_error)
+                if CON_DEVICE == 'oli' and "JTAG init failed" in ofl_error:
+                    print("Please reset the Olimex board manually using the FPGA_RST1 button.")
+                    print()
+                    eingabe = input("press enter to confirm, enter 'e' to exit: ")
+                    if eingabe == 'e':
+                        return False
+                else:
+                    return False
+            else:
+                return True
