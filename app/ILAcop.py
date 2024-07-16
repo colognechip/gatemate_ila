@@ -28,6 +28,7 @@ Commands:
   reconfig: Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
   
   start     Starts the communication to the ILA with the last uploaded config
+    -s  The -s parameter prevents the FPGA from being reconfigured on restart.
 
 '''
 p = argparse.ArgumentParser(prog='ILAcop.py', description='GateMate ILA control program. With this script, '

@@ -478,6 +478,15 @@ UPLOAD_FLAGS = ' -b olimex_gatemateevb '
 CON_DEVICE = 'oli'
 </pre>
 
+Due to a bug ([Issue #27](https://github.com/phdussud/pico-dirtyJtag/issues/27)), the program with the old firmware is unable to control the reset of the FPGA. Therefore, the FPGA must be manually reset every time it is reconfigured with the ILA.
+
+To fix this issue, the firmware of the RP2040 needs to be updated. A modified version of the firmware is available in the folder [Olimex_DirtyJTAG_firmware](Olimex_DirtyJTAG_firmware). The firmware can be loaded onto the board as follows:
+
+1. Connect your Raspberry Pi Pico to your computer via USB while holding the RP-BOOT1 button. Your Pico should appear as a mass storage device.
+2. Copy the `dirtyJtag.uf2` file to the mass storage device. Your Pico will automatically restart and run the program.
+
+To run the blink example located in `gatemate_ila/example_dut/blink/src/` on the Olimex board, the output `led` in the CCF file must be assigned to the port `IO_SB_B6`.
+
 
 ## Usage
 
@@ -549,6 +558,7 @@ Commands:
   reconfig: Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
 
   start     Starts the communication to the ILA with the last uploaded config
+    -s  The -s parameter prevents the FPGA from being reconfigured on restart.
 
 </pre>
 
@@ -631,6 +641,8 @@ The communication with the ILA can be restarted at any time after it has been te
 $ > python3 ILAcop.py start 
 </pre>
 The user software remembers the last configuration of the FPGA, reconfigures the FPGA, and starts communication with the gateware of the ILA.
+
+The -s parameter prevents the FPGA from being reconfigured on restart.
 
 ### Example of configuration with the interactive shell
 

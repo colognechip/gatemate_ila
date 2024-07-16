@@ -1061,7 +1061,7 @@ class ILAConfig:
                     if self.reset_name:
                         print()
                         response = input("Would you like to choose a different user controllable input than '"
-                                         + self.reset_name + "'? (y:yes/N:no):").lower()
+                                         + self.reset_name + "'? (y:yes/N:no): ").lower()
                         if response == 'p':
                             continue
                         elif response == 'e':
@@ -1613,7 +1613,8 @@ class ILAConfig:
         else:
             import usb.core
             from config import DIRTYJTAG_VID, DIRTYJTAG_PID, DIRTYJTAG_CMD, DIRTYJTAG_SIG, DIRTYJTAG_WRITE_EP, DIRTYJTAG_TIMEOUT
-            self.dev = usb.core.find(idVendor=DIRTYJTAG_VID, idProduct=DIRTYJTAG_PID)
+            dev = usb.core.find(idVendor=DIRTYJTAG_VID, idProduct=DIRTYJTAG_PID)
+            dev.set_configuration()
             buf = bytearray([
                 DIRTYJTAG_CMD["CMD_SETSIG"],
                 DIRTYJTAG_SIG["SIG_SRST"],
@@ -1621,7 +1622,7 @@ class ILAConfig:
                 DIRTYJTAG_CMD["CMD_STOP"]
             ])
             try:
-                self.dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
+                dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
             except usb.core.USBError as e:
                 print(f"set Signal failed {e}")
                 return -1
@@ -1633,11 +1634,11 @@ class ILAConfig:
                 DIRTYJTAG_CMD["CMD_STOP"]
             ])
             try:
-                self.dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
+                dev.write(DIRTYJTAG_WRITE_EP, buf, DIRTYJTAG_TIMEOUT)
             except usb.core.USBError as e:
                 print(f"set Signal failed {e}")
                 return -1
-            self.dev.reset()
+            dev.reset()
             time.sleep(0.5)
 
 

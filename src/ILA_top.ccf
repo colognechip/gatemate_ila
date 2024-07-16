@@ -13,5 +13,57 @@ Pin_in   "i_ss_ILA"  	  Loc = "IO_WA_B4";
 #################################################################################################
 # *******************************SUT Signals*************************************************** #
 # // __Place~for~Signals~SUT__
+## blink.ccf
+#
+# Date: 2022-10-21
+#
+# Format:
+# <pin-direction> "<pin-name>" Loc = "<pin-location>" | <opt.-constraints>;
+#
+# Additional constraints can be appended using the pipe symbol.
+# Files are read line by line. Text after the hash symbol is ignored.
+#
+# Available pin directions:
+#
+# Pin_in
+#   defines an input pin
+# Pin_out
+#   defines an output pin
+# Pin_inout
+#   defines a bidirectional pin
+#
+# Available pin constraints:
+#
+# SCHMITT_TRIGGER={true,false}
+#   enables or disables schmitt trigger (hysteresis) option
+# PULLUP={true,false}
+#   enables or disables I/O pullup resistor of nominal 50kOhm
+# PULLDOWN={true,false}
+#   enables or disables I/O pulldown resistor of nominal 50kOhm
+# KEEPER={true,false}
+#   enables or disables I/O keeper option
+# SLEW={slow,fast}
+#   sets slew rate to slow or fast
+# DRIVE={3,6,9,12}
+#   sets output drive strength to 3mA..12mA
+# DELAY_OBF={0..15}
+#   adds an additional delay of n * nominal 50ps to output signal
+# DELAY_IBF={0..15}
+#   adds an additional delay of n * nominal 50ps to input signal
+# FF_IBF={true,false}
+#   enables or disables placing of FF in input buffer, if possible
+# FF_OBF={true,false}
+#   enables or disables placing of FF in output buffer, if possible
+# LVDS_BOOST={true,false}
+#   enables increased LVDS output current of 6.4mA (default: 3.2mA)
+# LVDS_TERM={true,false}
+#   enables on-chip LVDS termination resistor of nominal 100Ohm, in output mode only
+#
+# Global IO constraints can be set with the default_GPIO statement. It can be
+# overwritten by individual settings for specific GPIOs, e.g.:
+#   default_GPIO | DRIVE=3; # sets all output strengths to 3mA, unless overwritten
+#
+
 Pin_in   "clk"  Loc = "IO_SB_A8" | SCHMITT_TRIGGER=true;
-Pin_out  "led"                   Loc = "IO_EB_B1";                           # LED D1
+Pin_in   "rst"  Loc = "IO_SB_B7"; # SW3
+Pin_out  "led"  Loc = "IO_SB_B6"; # D1
