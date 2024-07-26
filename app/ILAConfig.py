@@ -1614,7 +1614,31 @@ class ILAConfig:
             import usb.core
             from config import DIRTYJTAG_VID, DIRTYJTAG_PID, DIRTYJTAG_CMD, DIRTYJTAG_SIG, DIRTYJTAG_WRITE_EP, DIRTYJTAG_TIMEOUT
             dev = usb.core.find(idVendor=DIRTYJTAG_VID, idProduct=DIRTYJTAG_PID)
-            dev.set_configuration()
+            if dev is None:
+                raise ValueError("device not found")
+                return False
+            if os.name == 'nt':  # for Windows
+                dev.set_configuration()
+            else:  # for Unix (Linux, MacOS, etc.)
+                dev = usb.core.find(idVendor=DIRTYJTAG_VID, idProduct=DIRTYJTAG_PID)
+                if dev is None:
+                    print("Device not found. Make sure that it is connected and that the VID/PID are correct.")
+                    return None
+                try:
+                    dev.set_configuration()
+                except usb.core.USBError as e:
+                    print("Error configuring the device")
+                    for cfg in dev:
+                        for intf in cfg:
+                            if dev.is_kernel_driver_active(intf.bInterfaceNumber):
+                                try:
+                                    dev.detach_kernel_driver(intf.bInterfaceNumber)
+                                    print(f"Kernel driver for interface {intf.bInterfaceNumber} disconnected.")
+                                except usb.core.USBError as e:
+                                    print(f"Error when disconnecting the kernel driver for interface {intf.bInterfaceNumber}: {e}")
+                    dev.set_configuration()
+                except Exception as e:
+                    return False
             buf = bytearray([
                 DIRTYJTAG_CMD["CMD_SETSIG"],
                 DIRTYJTAG_SIG["SIG_SRST"],
@@ -1641,7 +1665,7 @@ class ILAConfig:
             dev.reset()
             time.sleep(0.5)
 
-
+        first_try = False
         while True:
             print()
             print("Upload to FPGA Board...")
@@ -1659,12 +1683,16 @@ class ILAConfig:
                 print(os.linesep + "Error: " + os.linesep)
                 print(ofl_error)
                 if CON_DEVICE == 'oli' and "JTAG init failed" in ofl_error:
-                    print("Please reset the Olimex board manually using the FPGA_RST1 button.")
-                    print()
-                    eingabe = input("press enter to confirm, enter 'e' to exit: ")
-                    if eingabe == 'e':
-                        return False
+                    if not first_try:
+                        first_try = True
+                    else:
+                        print("Please reset the Olimex board manually using the FPGA_RST1 button.")
+                        print()
+                        eingabe = input("press enter to confirm, enter 'e' to exit: ")
+                        if eingabe == 'e':
+                            return False
                 else:
                     return False
             else:
                 return True
+
