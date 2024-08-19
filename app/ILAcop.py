@@ -131,7 +131,7 @@ if args.showdev:
     exit()
 
 
-req_dirs = ["../net/", "../log/", "save_config/", "../p_r_out/", "vcd_files/", "config_design/"]
+req_dirs = [".."+os.path.sep+"net"+os.path.sep, ".."+os.path.sep+"log"+os.path.sep, "save_config"+os.path.sep, ".."+os.path.sep+"p_r_out"+os.path.sep, "vcd_files"+os.path.sep, "config_design"+os.path.sep]
 for del_dir in req_dirs:
     if not os.path.isdir(del_dir):
         print("ERROR! Either the specified folder structure has not been adhered to, or you are not starting the "
@@ -139,7 +139,7 @@ for del_dir in req_dirs:
         exit()
 
 if args.clean:
-    req_dirs = ["../net/", "../log/", "save_config/", "../p_r_out/", "vcd_files/", "config_design/"]
+    req_dirs = [".."+os.path.sep+"net"+os.path.sep, ".."+os.path.sep+"log"+os.path.sep, "save_config"+os.path.sep, ".."+os.path.sep+"p_r_out"+os.path.sep, "vcd_files"+os.path.sep, "config_design"+os.path.sep]
     for del_dir in req_dirs:
         for filename in os.listdir(del_dir):
             if ".gitkeep" not in filename:

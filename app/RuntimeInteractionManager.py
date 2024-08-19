@@ -398,7 +398,7 @@ class RuntimeInteractionManager:
         now = datetime.datetime.now()
         time_stamp = now.strftime("%y-%m-%d_%H-%M-%S")
         for runs, signals_seq in enumerate(signals):
-            file_name = "vcd_files/ila_" + self.project_name + "_" + time_stamp + "_" + str(runs) + ".vcd"
+            file_name = "vcd_files"+os.path.sep+"ila_" + self.project_name + "_" + time_stamp + "_" + str(runs) + ".vcd"
             self.creatVCD(signals_seq, file_name)
             self.thread = threading.Thread(target=openGTKWave, args=(file_name,))
             self.thread.daemon = True
@@ -469,7 +469,7 @@ class RuntimeInteractionManager:
         print(print_note([file_name],
                          " create vcd file "))
         pathname = os.path.dirname(sys.argv[0])
-        path = os.path.abspath(pathname) + "/" + file_name
+        path = os.path.abspath(pathname) + os.path.sep + file_name
         file = Path(path)
         writer_signals = []
         with open(file, "w") as f:

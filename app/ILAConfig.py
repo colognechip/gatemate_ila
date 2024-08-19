@@ -33,7 +33,7 @@ import datetime, math, time
 
 
 def get_files_with_extension(directory_path, extension):
-    search_pattern = directory_path + "/*." + extension
+    search_pattern = directory_path + ''+ os.path.sep +'*.' + extension
     file_list = glob.glob(search_pattern)
     absolute_paths = [os.path.abspath(file) for file in file_list]
     return absolute_paths
@@ -151,7 +151,7 @@ def string_to_dic(signal):
     last = str(signal.group(3))
     sig_name = last.split('=')[0].strip()
     mod_name = ""
-    if sig_name.startswith("\\"):
+    if sig_name.startswith(os.path.sep):
         mod_names = sig_name.split(".")
         sig_name = mod_names[-1]
         del mod_names[-1]
@@ -272,7 +272,7 @@ class ILAConfig:
 
     def save_to_json(self, file_name=None):
         if file_name is None:
-            file_name = 'save_config/ila_config_' + self.SUT_top_name + "_" + self.time_stamp + '.json'
+            file_name = 'save_config'+ os.path.sep +'ila_config_' + self.SUT_top_name + "_" + self.time_stamp + '.json'
         with open(file_name, 'w') as f:
             json.dump(self.__dict__, f, indent=4)
         return file_name
@@ -316,7 +316,7 @@ class ILAConfig:
             for source in self.verilog_sources:
                 SUT_files_sources_folder_verilog += get_files_with_extension(source, 'v')
             for Namen in SUT_files_sources_folder_verilog:
-                SUT_files_sources_folder_verilog_namen.append(Namen.split('\\')[-1])
+                SUT_files_sources_folder_verilog_namen.append(Namen.split(os.path.sep)[-1])
             if len(SUT_files_sources_folder_verilog_namen) == 0:
                 print("Error! No verilog file was found in the given folder!" + os.linesep)
                 return False, ''
@@ -337,7 +337,7 @@ class ILAConfig:
                 SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhd')
                 SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhdl')
             for Namen in SUT_files_sources_folder_vhdl:
-                SUT_files_sources_folder_vhdl_namen.append(Namen.split('\\')[-1])
+                SUT_files_sources_folder_vhdl_namen.append(Namen.split(os.path.sep)[-1])
             if len(SUT_files_sources_folder_vhdl_namen) == 0:
                 print("Error! No VHDL file was found in the given folder!" + os.linesep)
                 return False, ''
@@ -358,7 +358,7 @@ class ILAConfig:
             return False
         else:
             self.SUT_ccf_file_source = ccf_file_source[0]
-            print(print_note([self.SUT_ccf_file_source.split("\\")[-1]], " ccf File ", '#'))
+            print(print_note([self.SUT_ccf_file_source.split(os.path.sep)[-1]], " ccf File ", '#'))
             return True
 
     def flat_DUT(self, work_dir):
@@ -369,9 +369,9 @@ class ILAConfig:
         vhdl_found, vhdl_string = self.get_yosys_cmd_VHDL()
         if not vhdl_found:
             return False
-        self.DUT_file_name_flat = save_dir + '/config_design/' + self.SUT_top_name + '_' + self.time_stamp + '_flat.v'
+        self.DUT_file_name_flat = save_dir + os.path.sep + 'config_design' + os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat.v'
         save_gl_dir = os.path.dirname(save_dir)
-        log_file = save_gl_dir + '/log/yosys_DUT.log'
+        log_file = save_gl_dir + os.path.sep + 'log' + os.path.sep + 'yosys_DUT.log'
         from config import YOSYS
         if self.opt:
             opt_string = 'opt_expr; opt_clean; '
@@ -386,6 +386,7 @@ class ILAConfig:
                                                   'check;  alumacc; opt; memory -nomap; opt_clean; ' \
                                                   'memory_libmap -lib +/gatemate/brams.txt; techmap -map +/gatemate/brams_map.v; ' \
                                                   ' stat -width"'
+        # print(yosys_command)
         process = subprocess.Popen(yosys_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         print("Examine DUT ..." + os.linesep)
         output, error = process.communicate()
@@ -395,6 +396,8 @@ class ILAConfig:
             return self.find_rams_inuse(log_file)
         else:
             print(f"An error has occurred:{os.linesep}{error.decode('utf-8')}")
+            print("yosys cmd: ")
+            print(yosys_command)
             return False
 
     def find_rams_inuse(self, log_file):
@@ -571,7 +574,7 @@ class ILAConfig:
                     filename = match.group(2)
                     memory_name = match.group(3)
                     directory = os.path.dirname(path)
-                    mem_file_path = directory + "\\\\" +  filename  # os.path.join(directory, filename)
+                    mem_file_path = directory + os.path.sep +  filename  # os.path.join(directory, filename)
                     if os.path.isfile(mem_file_path):
                         return {"read_type": read_type, "mem_file": mem_file_path}
                     else:
@@ -580,7 +583,7 @@ class ILAConfig:
                         if os.path.isfile(file_path):
                             return {"read_type": read_type, "mem_file": file_path}
                         else:
-                            example_path = os.path.join("C:\\path\\to\\", filename)
+                            example_path = os.path.join("C:"+os.path.sep+"path"+os.path.sep+"to" +os.path.sep , filename)
                             print(
                                 f"The file {filename} was not found in: {os.linesep}{directory} {os.linesep}or {os.linesep}{parent_directory}.")
                             while 1:
@@ -1296,7 +1299,7 @@ class ILAConfig:
         new_code_line += wire_string + ["assign ila_sample_dut = {" + all_signals + "};" + os.linesep] + map_clk
         new_code_line += code_lines[found_element["end"]]
 
-        with open('config_design/' + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v', "w") as file:
+        with open('config_design'+ os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v', "w") as file:
             for string in new_code_line:
                 file.write(string)
 
@@ -1467,7 +1470,7 @@ class ILAConfig:
         instance_of_dut = instance_of_dut[:-2] + ", .ila_sample_dut(sample));"
 
         sample_total_size = self.get_analyse_Signals()
-        with open("../src/ILA_top.v", "r") as file:
+        with open('..'+ os.path.sep +'src'+ os.path.sep +'ILA_top.v', "r") as file:
             content = file.read()
             content = content.replace(
                 re.search(r"parameter USE_PLL = \d+", content).group(),
@@ -1528,14 +1531,14 @@ class ILAConfig:
             end_index = content.find(end_comment_SUT)
             if start_index != -1 and end_index != -1:
                 content = content[:start_index] + os.linesep + instance_of_dut + os.linesep + content[end_index:]
-        with open("../src/ILA_top.v", "w") as file:
+        with open('..'+ os.path.sep +'src'+ os.path.sep +'ILA_top.v', "w") as file:
             file.write(content)
 
         with open(self.SUT_ccf_file_source, "r") as file:
             all_lines = file.read()
 
         start_marker = "# // __Place~for~Signals~SUT__"
-        ccf_file_ILA_source = get_files_with_extension("../src", 'ccf')[0]
+        ccf_file_ILA_source = get_files_with_extension('..'+ os.path.sep +'src', 'ccf')[0]
         with open(ccf_file_ILA_source, "r") as file:
             content = file.read()
             start_index = content.find(start_marker) + len(start_marker)
@@ -1551,19 +1554,19 @@ class ILAConfig:
         from config import YOSYS, PR, PR_FLAGS, YOSYS_FLAGS
         save_dir = os.getcwd()
         save_gl_dir = os.path.dirname(save_dir)
-        files = get_files_with_extension("../src", 'v') + get_files_with_extension("../src/storage", 'v')
-        files.append(save_dir + "/config_design/" + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v')
+        files = get_files_with_extension('..'+ os.path.sep +'src', 'v') + get_files_with_extension('..'+ os.path.sep +'src'+ os.path.sep +'storage', 'v')
+        files.append(save_dir + os.path.sep +'config_design'+ os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v')
         all_files = " ".join(files)
-        log_file = save_gl_dir + '/log/yosys.log'
-        output_file_yosys = save_gl_dir + '/net/ila_top_synth' + self.time_stamp + '.v'
+        log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'yosys.log'
+        output_file_yosys = save_gl_dir + os.path.sep +'net'+ os.path.sep +'ila_top_synth' + self.time_stamp + '.v'
         yosys_command = YOSYS + ' -l ' + log_file + ' -p "read -sv ' + all_files + \
                         '; synth_gatemate -top ila_top ' + YOSYS_FLAGS + ' -vlog ' + output_file_yosys + '"'
         print("Execute Synthesis..." + os.linesep + "Output permanently saved to: " + log_file)
         if not execute_tool(yosys_command, output_file_yosys, log_file):
             return False
-        output_file_p_r = save_gl_dir + '/p_r_out/ila_top_' + self.time_stamp
-        ccf_file_ila_source = get_files_with_extension("../src", 'ccf')[0]
-        log_file = save_gl_dir + '/log/impl.log'
+        output_file_p_r = save_gl_dir + os.path.sep +'p_r_out'+ os.path.sep +'ila_top_' + self.time_stamp
+        ccf_file_ila_source = get_files_with_extension('..'+ os.path.sep +'src', 'ccf')[0]
+        log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'impl.log'
         p_r_command = PR + ' +sp -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
                       ccf_file_ila_source + '  > ' + log_file
         
@@ -1673,7 +1676,7 @@ class ILAConfig:
             process = subprocess.Popen(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info, stderr=subprocess.PIPE,
                                        stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
-            with open(save_gl_dir + '/log/ofl.log', 'w') as file:
+            with open(save_gl_dir + os.path.sep +'log'+ os.path.sep +'ofl.log', 'w') as file:
                 file.write(output.decode('utf-8'))
             ofl_error = error.decode('utf-8')
             if "failed" in ofl_error.lower():
