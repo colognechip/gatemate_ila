@@ -33,7 +33,7 @@ import datetime, math, time
 
 
 def get_files_with_extension(directory_path, extension):
-    search_pattern = directory_path + ''+ os.path.sep +'*.' + extension
+    search_pattern = directory_path + os.path.sep +'*.' + extension
     file_list = glob.glob(search_pattern)
     absolute_paths = [os.path.abspath(file) for file in file_list]
     return absolute_paths
@@ -151,7 +151,7 @@ def string_to_dic(signal):
     last = str(signal.group(3))
     sig_name = last.split('=')[0].strip()
     mod_name = ""
-    if sig_name.startswith(os.path.sep):
+    if sig_name.startswith("\\"):
         mod_names = sig_name.split(".")
         sig_name = mod_names[-1]
         del mod_names[-1]
