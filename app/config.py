@@ -32,6 +32,7 @@ REPRESENTATION_SOFTWARE = ['gtkwave']
 REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
 CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm', Olimex = 'oli'  freely customisable mode = 'cust', without leveshifter 'free'
 CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1',
+YOSYS_GHDL_FLAG = '' # ' -m ghdl ' 
 available_BRAM = 60
 freq_max = 10000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
 cust_gpio_direction_pins = 0x17F0

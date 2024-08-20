@@ -372,14 +372,14 @@ class ILAConfig:
         self.DUT_file_name_flat = save_dir + os.path.sep + 'config_design' + os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat.v'
         save_gl_dir = os.path.dirname(save_dir)
         log_file = save_gl_dir + os.path.sep + 'log' + os.path.sep + 'yosys_DUT.log'
-        from config import YOSYS
+        from config import YOSYS, YOSYS_GHDL_FLAG
         if self.opt:
             opt_string = 'opt_expr; opt_clean; '
         else:
             opt_string = ''
         if work_dir:
             os.chdir(work_dir)
-        yosys_command = YOSYS + ' -l ' + log_file + ' -p "' + verilog_string + \
+        yosys_command = YOSYS + ' -l ' + log_file + YOSYS_GHDL_FLAG +' -p "' + verilog_string + \
                         vhdl_string + ' hierarchy -check -top ' + self.SUT_top_name + \
                         '; proc; flatten; tribuf -logic; deminout; ' + opt_string + 'write_verilog ' + \
                         self.DUT_file_name_flat + ' ; ' \
