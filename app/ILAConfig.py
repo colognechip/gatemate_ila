@@ -1606,9 +1606,9 @@ class ILAConfig:
                 time.sleep(0.01)
             elif CON_DEVICE == 'pgm':
                 gpio.set_direction(pins=0x17F0, direction=0x1710)
-                gpio.write(0x0010)
+                gpio.write(0x0000)
                 time.sleep(0.01)
-                gpio.write(0x0210)
+                gpio.write(0x0010)
                 time.sleep(0.01)
             spi.close()
         else:
@@ -1674,13 +1674,16 @@ class ILAConfig:
             process = subprocess.Popen(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info, stderr=subprocess.PIPE,
                                        stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
-            with open(save_gl_dir + os.path.sep +'log'+ os.path.sep +'ofl.log', 'w') as file:
-                file.write(output.decode('utf-8'))
+            ofl_out = output.decode('utf-8')
             ofl_error = error.decode('utf-8')
-            if "failed" in ofl_error.lower():
+            with open(save_gl_dir + os.path.sep +'log'+ os.path.sep +'ofl.log', 'w') as file:
+                file.write(ofl_out + ofl_error)
+            
+            
+            if ("failed" in ofl_error.lower()) or not("done" in ofl_out.lower()):
                 print("Execute openFPGALoader command:")
                 print(UPLOAD + " " + UPLOAD_FLAGS + self.toolchain_info)
-                print(output.decode("utf-8"))
+                print(ofl_out)
                 print(os.linesep + "Error: " + os.linesep)
                 print(ofl_error)
                 if CON_DEVICE == 'oli' and "JTAG init failed" in ofl_error:
