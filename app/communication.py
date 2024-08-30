@@ -83,18 +83,18 @@ class Communication:
             with io.StringIO() as buf, redirect_stdout(buf):
                 Ftdi.show_devices()
                 output = buf.getvalue()
-            devices = re.findall(r'ftdi://\S+', output)
-            if len(devices) <= 1:
+            if not ("ftdi://" in output):
                 print("No device found!"+os.linesep+"To be able to use this programme, you have to connect an FTDI device.")
                 print("Please connect a device and restart the programme")
             else:
                 try:
+                    from config import CON_DEVICE, CON_LINK, freq_max
                     ftdi = Ftdi()
-                    ftdi.open_from_url(devices[0])
+                    ftdi.open_from_url(CON_LINK)
                     ftdi.reset()
                     ftdi.close()
                     spi = SpiController()
-                    from config import CON_DEVICE, CON_LINK, freq_max
+                    
                     spi.configure(CON_LINK, turbo=True) # , turbo=True
                     if frequency >= freq_max:
                         self.port = spi.get_port(cs=0, freq=freq_max, mode=0)
@@ -127,6 +127,8 @@ class Communication:
                     print("All found FTDI devices:")
                     print(output)
                     traceback.print_exc()
+                    sys.exit(1)
+
 
     def send_reset_ila(self):
         trys = 0

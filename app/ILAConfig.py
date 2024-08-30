@@ -1587,9 +1587,7 @@ class ILAConfig:
             with io.StringIO() as buf, redirect_stdout(buf):
                 Ftdi.show_devices()
                 output = buf.getvalue()
-            device = re.findall(r'ftdi://\S+', output)
-
-            if len(device) <= 1:
+            if not ("ftdi://" in output):
                 print("No device found!")
                 print(
                 "Please connect the device and restart the program." + os.linesep + "Your config is save, simply restart with: "

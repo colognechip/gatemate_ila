@@ -337,7 +337,7 @@ In the `app/config.py` file are predefined configurations for the original [eval
 The configurations are set by default on the evaluation board. To set these on the programmer, the following constants must be changed accordingly:
 
 <pre>
-UPLOAD_FLAGS = ' -b gatemate_pgm'
+UPLOAD_FLAGS = ' -c gatemate_pgm'
 CON_DEVICE = 'pgm'
 CON_LINK = 'ftdi://ftdi:232h/1'
 </pre>
