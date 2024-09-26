@@ -1567,7 +1567,7 @@ class ILAConfig:
         output_file_p_r = save_gl_dir + os.path.sep +'p_r_out'+ os.path.sep +'ila_top_' + self.time_stamp
         ccf_file_ila_source = get_files_with_extension('..'+ os.path.sep +'src', 'ccf')[0]
         log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'impl.log'
-        p_r_command = PR + ' +sp -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
+        p_r_command = PR + ' -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
                       ccf_file_ila_source + '  > ' + log_file
         
         time.sleep(3)
