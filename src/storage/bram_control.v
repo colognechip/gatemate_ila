@@ -24,16 +24,12 @@
 */
 
 module bram_control#(
-    parameter samples_count_before_trigger = 200,
-    parameter bits_samples_count_before_trigger = 8,
-    parameter bits_samples_count = 9,
-    parameter sample_width = 20,
-    parameter BRAM_matrix_wide = 1,
-    parameter BRAM_matrix_deep = 1,
-    parameter BRAM_single_wide = 5,
-    parameter BRAM_single_deep = 9,
-    parameter SIGNAL_SYNCHRONISATION=0
-    
+    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'hf,
+    parameter FIFO_IN_WIDTH = 5,
+    parameter FIFO_MATRIX_WIDTH = 3,
+    parameter FIFO_MATRIX_DEPH = 1,
+    parameter SIGNAL_SYNCHRONISATION = 0,
+    parameter sample_width = 20
 )(
     input i_clk_ILA,
     input i_sclk,
@@ -43,167 +39,81 @@ module bram_control#(
     input i_slave_end_byte_post_edge,
     input i_trigger_triggered,
     output [3:0] o_send_nib,
-    output o_write_done,
+    output wire o_write_done,
     input  [5:0] trigger_row,
-    output [(BRAM_single_wide-1):0] trigger_out
+    output [(FIFO_IN_WIDTH-1):0] trigger_out
 );
 
+parameter rest = ((FIFO_IN_WIDTH*FIFO_MATRIX_WIDTH) - sample_width);
+wire [((FIFO_IN_WIDTH*FIFO_MATRIX_WIDTH)-1):0] FIFO_DI, FIFO_DO;
+wire [(sample_width-1):0] o_sample;
 
-wire [(sample_width-1):0] RAM_smp_out;
-
+wire rd_nxt, FIFO_FULL, FIFO_ALMOST_EMPTY, FIFO_EMPTY, FIFO_POP;
 reg write_done;
+wire FIFO_clk;
+assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
+
+assign o_sample = FIFO_DO[(sample_width-1):0];
 
 
-
-parameter ma_deep_ad =  $clog2(BRAM_matrix_deep);
-
-localparam local_BRAM_single_deep = (BRAM_matrix_deep == 1) ? (bits_samples_count+1) : BRAM_single_deep;
-
-reg [((local_BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_rd;
-reg [((local_BRAM_single_deep+ma_deep_ad)-1):0] addr_cnt_wd, addr_cnt_wd_pip;
-
-
-reg [bits_samples_count:0] wd_counter;
-wire i_clk_BRAM;
-wire read_clk;
-assign read_clk = !i_sclk;
-assign i_clk_BRAM = !i_clk_ILA;
-wire [(BRAM_single_wide-1):0] data_in_pipe  [(BRAM_matrix_wide-1):0];
-wire [(BRAM_matrix_deep-1):0] we_BRAM;
-wire [(BRAM_single_wide*BRAM_matrix_wide)-1:0] BRAM_do_tmp [BRAM_matrix_deep-1:0];
-
-
-parameter rest = ((BRAM_single_wide*BRAM_matrix_wide) % sample_width);
-assign trigger_out = data_in_pipe[trigger_row];
-
-
-
+wire [(sample_width-1):0] DI_wire;
 generate
-    genvar i, j;
-    for (i = 0; i < BRAM_matrix_deep; i = i+1) begin : loop_init
-        if (BRAM_matrix_deep == 1) begin
-            assign we_BRAM[i] = !write_done; 
-        end else begin
-            assign we_BRAM[i] = ((!write_done) & (addr_cnt_wd_pip[((local_BRAM_single_deep+ma_deep_ad)-1):local_BRAM_single_deep] == i));
+    if (SIGNAL_SYNCHRONISATION > 0) begin
+        genvar i;
+        reg [(sample_width-1):0] sync_DI [(SIGNAL_SYNCHRONISATION-1):0];
+        always @(negedge i_clk_ILA) begin 
+            if (!i_reset) begin
+                sync_DI[0] <= 0;
+            end else begin  
+                sync_DI[0] <= i_sample;
+            end
         end
-    end
-    for (j = 0; j < BRAM_matrix_wide; j = j +1) begin : loop
-        if (j == (BRAM_matrix_wide-1)) begin 
-            assign data_in_pipe[j] = {{rest{1'b0}}, i_sample[(sample_width-1):(BRAM_single_wide)*(j)]};
+        for (i = 1; i < SIGNAL_SYNCHRONISATION; i = i+1) begin : loop
+            always @(negedge i_clk_ILA) begin
+                if (!i_reset) begin
+                    sync_DI[i] <= 0;
+                end else begin   
+                    sync_DI[i] <= sync_DI[i-1];
+                end
+            end
         end
-        else begin 
-                assign data_in_pipe[j] = i_sample[((BRAM_single_wide)*(j+1)-1):(BRAM_single_wide)*(j)];
-        end
-        for (i = 0; i < BRAM_matrix_deep; i = i+1) begin : loop
-            bram_ila  #(.DATA_WIDTH(BRAM_single_wide), 
-                        .ADDR_WIDTH(local_BRAM_single_deep),
-                        .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) 
-            ila_bram   (.clk(i_clk_BRAM),
-                        .rclk(read_clk), 
-                        .we(we_BRAM[i]),
-                        .di(data_in_pipe[j]),
-                        .addr_read(addr_cnt_rd[local_BRAM_single_deep-1:0]),
-                        .addr_write(addr_cnt_wd_pip[local_BRAM_single_deep-1:0]),
-                        .do(BRAM_do_tmp[i][(BRAM_single_wide*(j+1))-1 :BRAM_single_wide*j]));
-        end
-    end
-    if (BRAM_matrix_deep == 1) begin
-        assign RAM_smp_out = BRAM_do_tmp[0][(sample_width-1):0];
+        assign DI_wire = sync_DI[SIGNAL_SYNCHRONISATION-1];
     end else begin
-        assign RAM_smp_out = BRAM_do_tmp[addr_cnt_rd[((local_BRAM_single_deep+ma_deep_ad)-1):local_BRAM_single_deep]][(sample_width-1):0];
+        assign DI_wire = i_sample;
     end
-
 endgenerate
-
-wire period_done_sig;
-
-nedge_edge_detection wd_cnt_done_edge (.i_clk(i_clk_ILA), .i_reset(i_reset), .i_signal(addr_cnt_wd[bits_samples_count]), .o_nedge_edge(period_done_sig));
-
-
-reg period_done;
-
-always @(posedge i_clk_ILA) begin  
-    if (!i_reset) begin
-        period_done <= 0;
-    end else if (!period_done & period_done_sig) begin
-        period_done <= 1;
-    end
-end
-wire rd_nxt;
-
-wire save_before_done_sig; 
-
-nedge_edge_detection save_before_done_edge (.i_clk(i_clk_ILA), .i_reset(i_reset), .i_signal(addr_cnt_wd[bits_samples_count_before_trigger]), .o_nedge_edge(save_before_done_sig));
-
-reg save_before_done;
-
-always @(posedge i_clk_ILA) begin  
-    if (!i_reset) begin
-        save_before_done <= 0;
-    end else if (!save_before_done & save_before_done_sig) begin
-        save_before_done <= 1;
-    end
-end
-
-
-always @(posedge i_sclk) begin         
-    if (rd_nxt) begin 
-        addr_cnt_rd <= addr_cnt_rd+1;
-    end
-    else if (write_done & (!i_read_active)) begin
-        addr_cnt_rd <= addr_cnt_wd_pip+1;
-    end
-
-end
-
-
-always @(posedge i_clk_ILA) begin
-    if (!i_reset) begin
-        addr_cnt_wd <= 0;
-        addr_cnt_wd_pip <= 0;
-    end
-    else if (!write_done) begin
-        addr_cnt_wd <= addr_cnt_wd + 1;
-        addr_cnt_wd_pip <= addr_cnt_wd;
-    end
-end
-
-
-reg make_wd_cnt;
-always @(posedge i_clk_ILA) begin
-    if (!i_reset) begin
-        make_wd_cnt <= 0;
-    end
-    else if ((!write_done) & i_trigger_triggered & save_before_done) begin
-        make_wd_cnt <= 1;
-    end
-    else begin
-        make_wd_cnt <= 0;
-    end
-end
-
-always @(posedge i_clk_ILA) begin
-    if (!i_reset) begin
-        wd_counter <= samples_count_before_trigger;
-    end
-    else if (make_wd_cnt) begin
-        wd_counter <= wd_counter + 1;
-    end
-end
-
-wire write_done_edge_nedge;
-
-nedge_edge_detection write_done_edge (.i_clk(i_clk_ILA), .i_reset(i_reset), .i_signal(wd_counter[bits_samples_count]), .o_nedge_edge(write_done_edge_nedge));
-
+        assign FIFO_DI = {{rest{1'b0}}, DI_wire};
+FIFO_cascading_WIDTH #(
+    .WIDTH(FIFO_IN_WIDTH),
+    .WIDTH_cnt(FIFO_MATRIX_WIDTH),
+    .DEPH(FIFO_MATRIX_DEPH),
+    .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET)
+) FIFO_cas (
+    .rclk(FIFO_clk),
+    .wclk(FIFO_clk),
+    .rst(i_reset),
+    .PUSH_i(!write_done),
+    .POP_i(FIFO_POP),
+    .DI(FIFO_DI),
+    .DO(FIFO_DO),
+    .FULL_o(FIFO_FULL),
+    .ALMOST_FULL_o(),
+    .EMPTY_o(FIFO_EMPTY),
+    .ALMOST_EMPTY_o(FIFO_ALMOST_EMPTY),
+    .trigger_row(trigger_row),
+    .trigger_out(trigger_out)
+    
+);
 
 always  @(posedge i_clk_ILA) begin
     if (!i_reset) begin 
         write_done <= 0;
     end
-    else if(write_done_edge_nedge) begin
+    else if(FIFO_FULL) begin
         write_done <= 1;
     end
 end
+assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
 
 assign o_write_done = write_done;
 
@@ -212,7 +122,7 @@ assign o_write_done = write_done;
 generate
     if (sample_width > 4) begin 
         smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_sclk), .i_read_active(i_read_active), 
-                                                        .i_ram_sample(RAM_smp_out),
+                                                        .i_ram_sample(o_sample),
                                                         .i_slave_end_byte_post_edge(i_slave_end_byte_post_edge),
                                                         .o_send_nib(o_send_nib), .o_rd(rd_nxt));
     end
@@ -224,7 +134,7 @@ generate
                 send_nib_sync <= 0;
             end
             else begin
-                send_nib_sync <= {{rest_send_byte{1'b0}}, RAM_smp_out};
+                send_nib_sync <= {{rest_send_byte{1'b0}}, o_sample};
             end
         end
         assign o_send_nib = send_nib_sync;

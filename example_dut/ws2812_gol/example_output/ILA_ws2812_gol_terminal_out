@@ -914,50 +914,47 @@ Which signals should be analyzed (0 = finish)? 0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 Please choose one of the following durations:
-+---+---------+---------------+
-| # | smp_cnt | duration [us] |
-+---+---------+---------------+
-| 1 |      23 |           2.3 |
-| 2 |      55 |           5.5 |
-| 3 |     119 |          11.9 |
-| 4 |     247 |          24.7 |
-| 5 |     503 |          50.3 |
-| 6 |    1015 |         101.5 |
-| 7 |    2039 |         203.9 |
-+---+---------+---------------+
 
-Capture duration before trigger activation (choose between 1 and 7): 1
+------Please choose one of the following durations: ------
++---+---------+---------------+--------------+-----------+
+| # | smp_cnt | duration [us] | FIFO Cascade |      FIFO |
++---+---------+---------------+--------------+-----------+
+| 1 |    1024 |         102.4 |        3 x 1 | 40 x 1024 |
+| 2 |    2048 |         204.8 |        3 x 2 | 40 x 1024 |
+| 3 |    3072 |         307.2 |        3 x 3 | 40 x 1024 |
+| 4 |    4096 |         409.6 |        3 x 4 | 40 x 1024 |
+| 5 |    5120 |         512.0 |        3 x 5 | 40 x 1024 |
+| 6 |    6144 |         614.4 |        3 x 6 | 40 x 1024 |
++---+---------+---------------+--------------+-----------+
+
+Total Capture duration (choose between 1 and 2): 2
+
+############# Capture duration ##############
+#                                           #
+# Sample count = 8192                       #
+# Capture duration = 819.2 us               #
+#                                           #
+#############################################
+
+
+Enter the number of capture samples before trigger activation (between 0 and 250): 200
 
 ###### Capture duration before Trigger ######
 #                                           #
-# Sample count = 23                         #
-# Capture duration = 2.3 us                 #
+# Sample count = 200                        #
+# Capture duration = 20.2 us                #
 #                                           #
 #############################################
 
-Please choose one of the following durations:
-+---+---------+---------------+
-| # | smp_cnt | duration [us] |
-+---+---------+---------------+
-| 1 |      41 |           4.1 |
-| 2 |     105 |          10.5 |
-| 3 |     233 |          23.3 |
-| 4 |     489 |          48.9 |
-| 5 |    1001 |         100.1 |
-| 6 |    2025 |         202.5 |
-| 7 |    4073 |         407.3 |
-| 8 |    8169 |         816.9 |
-+---+---------+---------------+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                                                                                   !
+! You can override an input or input-vector of your top-level entity using the ILA. !
+! Please note that the input will no longer be connected to the FPGA's IO pins.     !
+!                                                                                   !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Capture duration after trigger activation (choose between 1 and 8): 8
 
-###### Capture duration after Trigger #######
-#                                           #
-# Sample count = 8169                       #
-# Capture duration = 816.9 us               #
-#                                           #
-#############################################
-
+Would you like to implement the input control feature? (y/N):
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                         !
@@ -973,25 +970,49 @@ Capture duration after trigger activation (choose between 1 and 8): 8
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-Would you like me to implement the function for comparing bit patterns? (y/N): 
+Would you like to implement the function for comparing bit patterns? (y/N):
+
+############ Signals under test #############
+#                                           #
+# gol_init                                  #
+# gol_next_gen                              #
+#  [88:81] life_out                         #
+#  [78:71] life_out                         #
+#  [68:61] life_out                         #
+#  [58:51] life_out                         #
+#  [48:41] life_out                         #
+#  [38:31] life_out                         #
+#  [28:21] life_out                         #
+#  [18:11] life_out                         #
+# [1:0] rgb_color                           #
+# [7:0] shift_life_row                      #
+# [7:0] ws2812_ram_addr_wr                  #
+# [7:0] ws2812_rgb_byte_reg                 #
+# [7:0] shift_rgb_byte                      #
+# [7:0] ws2812_ram_addr_rd                  #
+# data_out                                  #
+# run                                       #
+#                                           #
+#############################################
 
 Execute Synthesis...
-Output permanently saved to: C:\Users\df\gatemate_ila/log/yosys.log
+Output permanently saved to: C:\Users\df\Desktop\ILA_03_10_2024_clean\gatemate_ila\log\yosys.log
 
 Execute Implementation...
-Output permanently saved to: C:\Users\df\gatemate_ila/log/impl.log
+Output permanently saved to: C:\Users\df\Desktop\ILA_03_10_2024_clean\gatemate_ila\log\impl.log
 
 #################### Configuration File ####################
 #                                                          #
-# save_config/ila_config_ws2812_gol_23-12-02_17-23-46.json #
+# save_config\ila_config_ws2812_gol_24-10-14_10-32-20.json #
 #                                                          #
 ############################################################
+
 
 Upload to FPGA Board...
 
 ############ CONFIGURATION NOTE #############
 #                                           #
-# Trigger at sample no.: 23                 #
+# Trigger at sample no.: 200                #
 # Defined analysis frequency: 10000000 Hz   #
 #                                           #
 #############################################

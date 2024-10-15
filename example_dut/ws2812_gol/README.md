@@ -49,8 +49,7 @@ The ILA was configured as follows:
     11. **data_out**  
         Serial data line for the WS2812 matrix.
 
-- Capture duration before Trigger: Sample count = 23, Capture duration = 2.3 us.
-- Capture duration after Trigger: Sample count = 8169, Capture duration = 816.9 us.
+- Capture duration: Sample count = 8192, Capture duration = 819.2 us.
 
 ## Generated waveform and images of the hardware
 

@@ -2,9 +2,8 @@
 
 module blink_4(
 		input wire clk,
-		// input wire rst,
-		// output [24:0] ila_sample_dut,
-		output wire [3:0] led
+		output wire [7:0] led,
+		input wire [3:0] led_ctrl
 	);
 
 
@@ -14,6 +13,8 @@ module blink_4(
 	CC_USR_RSTN usr_rstn_inst (
    	.USR_RSTN(rst) // reset signal to CPE array
 );
+
+assign led[7:4] = led_ctrl;
 
 reg [24:0] counter_1;
 wire clk270_1, clk180_1, clk90_1, clk0_1, usr_ref_out_1;
@@ -45,14 +46,14 @@ wire usr_pll_lock_stdy_1, usr_pll_lock_1;
 
 	// assign ila_sample_dut = counter;
 
-
+	wire clk270_3, clk180_3, clk90_3, clk0_3, usr_ref_out_3;
 	reg [24:0] counter_2;
 wire clk270_2, clk180_2, clk90_2, clk0_2, usr_ref_out_2;
 wire usr_pll_lock_stdy_2, usr_pll_lock_2;
 
 	CC_PLL #(
 		.REF_CLK("10.0"),    // reference input in MHz
-		.OUT_CLK("25.0"),    // pll output frequency in MHz
+		.OUT_CLK("25"),    // pll output frequency in MHz
 		.PERF_MD("ECONOMY"), // LOWPOWER, ECONOMY, SPEED
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant
@@ -83,7 +84,6 @@ wire usr_pll_lock_stdy_2, usr_pll_lock_2;
 	end
 
 	reg [24:0] counter_3;
-wire clk270_3, clk180_3, clk90_3, clk0_3, usr_ref_out_3;
 wire usr_pll_lock_stdy_3, usr_pll_lock_3;
 
 	CC_PLL #(
@@ -115,19 +115,19 @@ wire usr_pll_lock_stdy_3, usr_pll_lock_3;
 	wire usr_pll_lock_stdy_4, usr_pll_lock_4;
 	
 		CC_PLL #(
-			.REF_CLK("10.0"),    // reference input in MHz
-			.OUT_CLK("100.0"),   // pll output frequency in MHz
-			.PERF_MD("ECONOMY"), // LOWPOWER, ECONOMY, SPEED
-			.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
-			.CI_FILTER_CONST(2), // optional CI filter constant
-			.CP_FILTER_CONST(4)  // optional CP filter constant
+			.REF_CLK("10.0"),    
+			.OUT_CLK("100.0"),   
+			.PERF_MD("ECONOMY"), 
+			.LOW_JITTER(1),      
+			.CI_FILTER_CONST(2), 
+			.CP_FILTER_CONST(4)  
 		) pll_inst_4 (
 			.CLK_REF(clk), .CLK_FEEDBACK(1'b0), .USR_CLK_REF(1'b0),
 			.USR_LOCKED_STDY_RST(1'b0), .USR_PLL_LOCKED_STDY(usr_pll_lock_stdy_4), .USR_PLL_LOCKED(usr_pll_lock_4),
 			.CLK270(clk270_4), .CLK180(clk180_4), .CLK90(clk90_4), .CLK0(clk0_4), .CLK_REF_OUT(usr_ref_out_4)
 		);
 	
-		assign led[3] = counter_4[24];
+		assign led[3] = counter_4[29];
 	
 		always @(posedge clk0_4)
 		begin

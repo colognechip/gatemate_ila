@@ -2,9 +2,8 @@
 
 module blink(
 		input wire clk,
-		//input wire ILA_rst,
-		//output [4:0] ila_sample_dut,
-		output wire led
+		input wire LED_ctrl,
+		output wire [7:0] led
 	);
 
 	wire rst;
@@ -18,7 +17,7 @@ reg [24:0] counter;
 
 	CC_PLL #(
 		.REF_CLK("10.0"),    // reference input in MHz
-		.OUT_CLK("20"),   // pll output frequency in MHz
+		.OUT_CLK("25"),   // pll output frequency in MHz
 		.PERF_MD("SPEED"), // LOWPOWER, ECONOMY, SPEED
 		.LOW_JITTER(1),      // 0: disable, 1: enable low jitter mode
 		.CI_FILTER_CONST(2), // optional CI filter constant
@@ -29,7 +28,8 @@ reg [24:0] counter;
 		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out)
 	);
 
-	assign led = counter[24];
+	assign led[6:0] = counter[24:21];
+	assign led[7] = LED_ctrl;
 
 	always @(posedge clk0)
 	begin

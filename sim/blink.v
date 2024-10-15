@@ -2,16 +2,18 @@
 
 module blink(
 		input wire clk,
-		input wire ILA_rst,
+		input wire ILA_rst, 
 		output [24:0] ila_sample_dut,
-		output wire led
+		output wire [7:0] led,
+		output wire ila_clk_src
 	);
 
 
 reg [24:0] counter;
 
-	assign led = counter[24];
+	assign led = counter[24:17];
 	assign ila_sample_dut = counter;
+	assign ila_clk_src = clk;
 
 	always @(posedge clk)
 	begin

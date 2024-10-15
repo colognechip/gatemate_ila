@@ -119,15 +119,26 @@ class RuntimeInteractionManager:
     project_name = ''
     trigger_pattern = ""
     trigger_mask = ""
+    input_pattern = ""
     const_trigger_all = [{"activation": 0b00000000,
                              "trigger": (0b10010000, 0), "trigger_clear": 0,
                              "pattern_msg": None, "trigger_act": 0}]
 
     def __init__(self, an_freq=40000000, smp_before=100, smp_after=1000, signale=[], project_name = "test",
-                 with_pattern=False, bram_single_wide = 5, bram_matrix_wide = 1, use_reset_function = False):
+                 with_pattern=False, bram_single_wide = 5, bram_matrix_wide = 1, use_reset_function = False,
+                 input_ctrl_size = 0, input_ctrl_signal_name = None, FIFO_MATRIX_DEPH = 1):
         self.use_reset_function = use_reset_function
+        self.FIFO_MATRIX_DEPH = FIFO_MATRIX_DEPH
+        self.reset_choose = 0
+        self.input_choose = 0
+        self.input_ctrl_size = input_ctrl_size
         if self.use_reset_function:
+            self.reset_choose = len(self.menu_options)
             self.menu_options.append('reset DUT (hold the DUT in reset until the capture starts)')
+        if input_ctrl_size > 0:
+            self.input_choose = len(self.menu_options)
+            self.input_ctrl_signal_name = input_ctrl_signal_name
+            self.menu_options.append('change input control value')
         self.trigger_all = self.const_trigger_all
         self.project_name = project_name
         self.analysis_frequency = an_freq
@@ -170,7 +181,7 @@ class RuntimeInteractionManager:
                 exit()
 
     def run(self):
-        print(print_note(["Trigger at sample no.: " + str(self.count_samples[0]-9),
+        print(print_note(["Trigger at sample no.: " + str(self.count_samples[0]-2),
                                 "Defined analysis frequency: " + str(self.analysis_frequency) + " Hz"]))
         while True:
             try:
@@ -196,8 +207,11 @@ class RuntimeInteractionManager:
                     self.com.send_reset_ila()
                     self.trigger_all = self.const_trigger_all
                     self.trigger_mask =  '1' * self.signal_count
-                elif option == 4 and self.use_reset_function:
+                elif option == self.reset_choose:
                     self.com.reset_DUT()
+                elif option == self.input_choose:
+                    self.input_change_f()
+
                 else:
                     print(os.linesep + "Value out of range")
                     continue
@@ -206,7 +220,35 @@ class RuntimeInteractionManager:
                 traceback.print_exc()
                 exit()
 
+    def input_change_f(self):
+        print(print_note(["Define a Bit-Pattern for Input-Control",
+                          "Set individual bits using '0' and '1'"], " Input Pattern ", "!"))
+        index_signal = 0
+        self.input_pattern = ""
+        while index_signal < self.input_ctrl_size:
+            print(self.input_ctrl_signal_name + "["+str(index_signal)+"]: ", end="", flush=True)
+            c = get_ch()
+            if c in ['0', '1']:
+                self.input_pattern = c + self.input_pattern
+                index_signal = index_signal + 1
+                print(c)
+            elif c == -1:
+                print()
+                if index_signal > 0:
+                    index_signal = index_signal - 1
+                    self.input_pattern = self.input_pattern[1:]
 
+        # senden des pattern
+        nib_send = int((self.input_ctrl_size-1) / 4) + 1
+        byte_send = int((self.input_ctrl_size - 1) / 8) + 1
+        nib_rest = (nib_send*4) - self.input_ctrl_size
+        rest_byte = (byte_send*8) - self.input_ctrl_size
+        self.input_pattern = ('0'* nib_rest) + self.input_pattern + ('0'* (rest_byte-nib_rest))
+        change_trigger_pattern = [0b00001110] + [int(self.input_pattern[i:i + 8], 2) for i in range(0, len(self.input_pattern), 8)]
+        self.com.send_msg(change_trigger_pattern)
+
+
+        # wir brauchen noch den namen des INPUT???
 
     def change_pattern(self):
         self.print_signals_test()
@@ -485,6 +527,9 @@ class RuntimeInteractionManager:
                     nibble_2 = bytes & 0x0F
                     nibble_1 = (bytes & 0xF0) >> 4
                     if start:
+                        #print(f'Nibble 1: {format(nibble_1, "04b")}')
+                        #print(f'Nibble 2: {format(nibble_2, "04b")}')
+                        #print()
                         if (nibble_1 & 0xF) == 0b1110:
                             start = False
                             nibbles.append(nibble_2)
@@ -508,9 +553,19 @@ class RuntimeInteractionManager:
                         samp_arr[y] |= (nibbles[z] << (4 * x))
                         z += 1
 
+                stufen = self.count_samples_total // self.FIFO_MATRIX_DEPH
+                if self.FIFO_MATRIX_DEPH > 1:
+                    for x in range(1, self.FIFO_MATRIX_DEPH):
+                        del samp_arr[(x*stufen)-x+1]
 
-                samp_arr = samp_arr[-1:] + samp_arr[:-1]
+
+                #print("Attention test Mode ist aktivated")
+                #start_test = True
+                #signal_alt = 0
                 for sample_counter in range(len(samp_arr)):  # go through all samples
+                    #if sample_counter == (durchgang*stufen):
+                    #    durchgang+=1
+                    #    continue
                     bit_counter = 0
                     for signal_name_index in range(len(self.signal_names)):  # go through all defined signals and vectors
                         self.signal_names[signal_name_index][2] = ""
@@ -519,6 +574,19 @@ class RuntimeInteractionManager:
                                                       self.signal_names[signal_name_index][2]
                             bit_counter = bit_counter + 1
                         writer.change(writer_signals[signal_name_index], self.delta_time_ps * sample_counter, self.signal_names[signal_name_index][2])
+                        #print(self.signal_names[signal_name_index][2])
+                        #if start_test:
+                        #    start_test = False
+                        #    signal_alt = int(self.signal_names[signal_name_index][2], 2)
+                        #else:
+                        #    if signal_alt != (int(self.signal_names[signal_name_index][2], 2) - 1):
+                        #        if int(self.signal_names[signal_name_index][2]) == 0:
+                        #            print(f"neustart? @{sample_counter} ({self.delta_time_ps * sample_counter}): alt: {signal_alt}, neu: {int(self.signal_names[signal_name_index][2], 2)}")
+                        #        else:
+                        #            print(
+                        #                f"fehler? @{sample_counter} ({self.delta_time_ps * sample_counter}): alt: {signal_alt}, neu: {int(self.signal_names[signal_name_index][2], 2)}")
+                        #    signal_alt = int(self.signal_names[signal_name_index][2], 2)
+
                     writer.change(counter_var, self.delta_time_ps * sample_counter, sample_counter)
                     if sample_counter == (self.count_samples_total - 1): # add one more, for better representation
                         for signal_name_index in range(len(self.signal_names)):  # go through all defined signals and vectors

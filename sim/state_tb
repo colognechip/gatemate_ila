@@ -1,0 +1,15 @@
+0 Reset_ILA
+1 Reset_DUT
+2 conf_trigger_1
+3 conf_trigger_2
+4 conf_trigger_3
+5 change_input_ctrl
+6 change_input_rest
+7 Trigger_activarion
+8 wait_for_trigger
+9 start_receive
+A wait_for_cnt_end
+B st_spi_first_byte
+C s_receive_Signals
+D get_data_1
+E get_data_2

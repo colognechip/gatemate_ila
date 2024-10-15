@@ -24,36 +24,28 @@
 */
 
 module ila_top#(
-    parameter SIGNAL_SYNCHRONISATION = 0,
     parameter USE_USR_RESET = 1, 
     parameter USE_PLL = 0,
     parameter USE_FEATURE_PATTERN = 1,
-    parameter samples_count_before_trigger = 2048,
-    parameter bits_samples_count_before_trigger = 10,
-    parameter bits_samples_count = 11,
-    parameter sample_width = 65,
+    parameter INPUT_CTRL_size = 4,
+    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'h3,
+    parameter FIFO_IN_WIDTH = 20,
+    parameter FIFO_MATRIX_WIDTH = 6,
+    parameter FIFO_MATRIX_DEPH = 5,
+    parameter sample_width = 108,
     parameter external_clk_freq = "10.0",
-    parameter sampling_freq_MHz = "10.0",
-    parameter BRAM_matrix_wide = 13,
-    parameter BRAM_matrix_deep = 1,
-    parameter BRAM_single_wide = 5,
-    parameter BRAM_single_deep = 12,
-    parameter clk_delay = 2
+    parameter sampling_freq_MHz = "100.0",
+    parameter clk_delay = 2,
+    parameter SIGNAL_SYNCHRONISATION = 2
 )(
-    (* clkbuf_inhibit *) input i_sclk_ILA,
+    (* clkbuf_inhibit *) input i_sclk_ILA, //
     input i_mosi_ILA,
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~Signals~start__
 input clk,
-input i_mosi,
-input i_sclk,
-input i_ss,
 output [7:0] led,
-output o_miso,
-input reset,
-output ws2812_out,
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -70,10 +62,14 @@ wire USR_RSTN;
 reg hold_reset;
 wire reset_DUT;
 wire ILA_clk_src;
+
 // #################################################################################################
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
-ws2812_gol DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .reset(reset), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
+reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;
+wire [INPUT_CTRL_size-1:0] led_ctrl_DUT_ILA_34;
+assign led_ctrl_DUT_ILA_34 = input_ctrl_DUT;
+blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .led_ctrl(led_ctrl_DUT_ILA_34), .ila_sample_dut(sample));
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
@@ -111,7 +107,9 @@ generate
         end
 endgenerate
 
-
+wire i_sclk_ILA_1, i_sclk_ILA_2;
+assign i_sclk_ILA_1 = !i_sclk_ILA;
+assign i_sclk_ILA_2 = !i_sclk_ILA_1;
 
 CC_USR_RSTN usr_rstn_inst (
    .USR_RSTN(USR_RSTN) // reset signal to CPE array
@@ -126,9 +124,10 @@ wire config_ILA;
 wire s_s_rec_nib_ready;
 reg read_active;
 wire write_done;
-spi_slave spi_passiv (.i_sclk(i_sclk_ILA), 
+reg trigger_active_hold;
+spi_slave spi_passiv (.i_sclk(i_sclk_ILA_2), 
                 .i_ss(i_ss_ILA), 
-                .i_echo(!write_done), 
+                .i_echo(!trigger_active_hold), 
                 .i_mosi(i_mosi_ILA), 
                 .o_miso(o_miso_ILA), 
                 .i_nib_send(spi_nib_send), 
@@ -139,22 +138,70 @@ reg ila_reset_register_clk, ila_reset_register_sclk, clk_reset_check;           
 
 reg sclk_reset_check = 0;
 
-// Processing of the received commands
-
-wire change_trigger_hold;
 wire ready_read;
+wire conf_input_ctrl;
+assign ready_read = ((!config_ILA) & (!conf_input_ctrl) & s_s_rec_nib_ready);
 
-assign ready_read = ((!config_ILA) & s_s_rec_nib_ready);
+// INPUT CTRL
+reg input_ctrl_run;
+generate
+    if (INPUT_CTRL_size > 0) begin
+        localparam nibble_input = ((INPUT_CTRL_size-1)/4)+1;
+        reg input_ctrl_run;
+        wire input_ctrl_start;
+        rec_cmd_nib #(  .ADDR(4'b1110)) 
+        rec_input_ctrl (   .i_clk(i_sclk_ILA_2), 
+                .i_wr_en(ready_read), 
+                .i_nib(spi_nib_receive), 
+                .o_hold(input_ctrl_start));
 
+        reg input_ctrl_done;
+        always @(posedge i_sclk_ILA_2) begin
+            if (!ila_reset_register_sclk | input_ctrl_done) begin
+                input_ctrl_run <= 0;
+            end else if (input_ctrl_start) begin
+                input_ctrl_run <= 1;
+            end
+        end
 
+        assign conf_input_ctrl = input_ctrl_run;
 
+        always @(posedge i_sclk_ILA_2) begin
+            if (!ila_reset_register_sclk) begin
+                input_ctrl_DUT <= 0;
+            end
+            if (input_ctrl_run & s_s_rec_nib_ready) begin
+                input_ctrl_DUT <= {input_ctrl_DUT[INPUT_CTRL_size-5:0], spi_nib_receive};
+            end
+        end
+        localparam input_bit_count = $clog2(nibble_input); 
+        reg [input_bit_count:0] input_ctrl_cnt;
+        always @(posedge i_sclk_ILA_2) begin
+            if (!input_ctrl_run) begin
+                input_ctrl_cnt <= 0;
+                input_ctrl_done <= 0;
+            end
+            else if (s_s_rec_nib_ready) begin
+                if (input_ctrl_cnt == nibble_input-1) begin
+                    input_ctrl_done <= 1;
+                end else begin
+                    input_ctrl_cnt <= input_ctrl_cnt + 1;
+                end
+            end
+        end
+    end else begin
+        assign conf_input_ctrl = 0;
+    end
+endgenerate
+
+// Processing of the received commands
+wire change_trigger_hold;
 // Processing SPI command: ILA reset
 
 wire ila_reset_signal;
 
-
 rec_cmd_nib #(  .ADDR(4'b0110)) 
-ila_restart (   .i_clk(i_sclk_ILA), 
+ila_restart (   .i_clk(i_sclk_ILA_2), 
                 .i_wr_en(ready_read), 
                 .i_nib(spi_nib_receive), 
                 .o_hold(ila_reset_signal));
@@ -183,7 +230,7 @@ always @(posedge i_clk_ILA) begin
     end
 end
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         sclk_reset_check <= 1;
     end else begin
@@ -192,18 +239,18 @@ always @(posedge i_sclk_ILA) begin
 end
 
 wire dut_reset_signal;
-reg trigger_active_hold;
+
 
 generate
     if (USE_USR_RESET == 1) begin
             
         rec_cmd_nib #(.ADDR(4'b1010)) 
-        dut_reset ( .i_clk(i_sclk_ILA), 
+        dut_reset ( .i_clk(i_sclk_ILA_2), 
                     .i_wr_en(ready_read), 
                     .i_nib(spi_nib_receive),
                     .o_hold(dut_reset_signal));
 
-        always @(posedge i_sclk_ILA) begin
+        always @(posedge i_sclk_ILA_2) begin
             if (!ila_reset_register_sclk | trigger_active_hold) begin
                 hold_reset <= 1;
             end else if (dut_reset_signal) begin
@@ -224,14 +271,16 @@ reg conf_trigger_start = 0;
 // set Trigger and aktivate all
 
 rec_cmd_nib #(  .ADDR(4'b1001)) 
-change_trigger (.i_clk(i_sclk_ILA), 
+change_trigger (.i_clk(i_sclk_ILA_2), 
                 .i_wr_en(ready_read), 
                 .i_nib(spi_nib_receive),
                 .o_hold(change_trigger_hold));
 
 
-always @(posedge i_sclk_ILA) begin
-    if (!ila_reset_register_sclk | trigger_active_hold) begin
+wire conf_trigger_1, conf_trigger_2, conf_trigger_3, conf_trigger_4;
+
+always @(posedge i_sclk_ILA_2) begin
+    if (!ila_reset_register_sclk | conf_trigger_4) begin
         conf_trigger_start <= 0;
     end else if (change_trigger_hold) begin
         conf_trigger_start <= 1;
@@ -242,8 +291,6 @@ reg [1:0] state_trigger_conf;
 
 wire conf_trigger_action;
 
-wire conf_trigger_1, conf_trigger_2, conf_trigger_3, conf_trigger_4;
-
 assign conf_trigger_action = conf_trigger_start & s_s_rec_nib_ready;
 
 assign conf_trigger_1 = conf_trigger_action & (state_trigger_conf == 2'b00);
@@ -252,7 +299,7 @@ assign conf_trigger_3 = conf_trigger_action & (state_trigger_conf == 2'b10);
 assign conf_trigger_4 = conf_trigger_action & (state_trigger_conf == 2'b11);
 
 // counter 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk ) begin
         state_trigger_conf <= 0;
     end
@@ -261,7 +308,7 @@ always @(posedge i_sclk_ILA) begin
     end
 end
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         trigger_row <= 0;
     end
@@ -272,7 +319,7 @@ always @(posedge i_sclk_ILA) begin
     end
 end
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         trigger_column <= 0;
     end
@@ -284,7 +331,7 @@ always @(posedge i_sclk_ILA) begin
     end
 end
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         trigger_activation <= 0;
         trigger_active_hold <= 0;
@@ -295,38 +342,6 @@ always @(posedge i_sclk_ILA) begin
     end
 end
 
-/*
-always @(posedge i_sclk_ILA) begin
-if (!ila_reset_register_sclk) begin
-    trigger_column <= 0;
-        trigger_row <= 0;
-        trigger_active_hold <= 0;
-        trigger_activation <= 0;
-        state_trigger_conf <= 0;
-    end
-    else if (conf_trigger_start & s_s_rec_nib_ready) begin // drei nibbel reinschiften
-        case (state_trigger_conf)
-            2'b00: begin
-                trigger_row <= {spi_nib_receive, 2'b00};
-                state_trigger_conf <= state_trigger_conf + 1;
-            end
-            2'b01: begin
-                trigger_row[1:0] <= spi_nib_receive[3:2];
-                trigger_column[5:4] <= spi_nib_receive[1:0];
-                state_trigger_conf <= state_trigger_conf + 1;
-            end
-            2'b10: begin
-                trigger_column[3:0] <= spi_nib_receive;
-                state_trigger_conf <= state_trigger_conf + 1;
-            end
-            2'b11 : begin
-                trigger_activation <= spi_nib_receive[1:0];
-                trigger_active_hold <= 1;
-            end
-        endcase
-    end
-end
-*/
 
 // Processing SPI command: Starting the reading of the stored samples
 
@@ -334,7 +349,7 @@ wire ready_read_ram;
 
 
 rec_cmd_nib #( .ADDR(4'b1100)) 
-command_read ( .i_clk(i_sclk_ILA), 
+command_read ( .i_clk(i_sclk_ILA_2), 
                .i_wr_en(ready_read), 
                .i_nib(spi_nib_receive),
                 .o_hold(ready_read_ram));
@@ -342,7 +357,7 @@ command_read ( .i_clk(i_sclk_ILA),
 
 reg read_active_pipe;
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk | read_active) begin
             read_active_pipe <= 0;
     end else if (ready_read_ram) begin
@@ -350,7 +365,7 @@ always @(posedge i_sclk_ILA) begin
     end
 end
 
-always @(posedge i_sclk_ILA) begin
+always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         read_active <= 0;    
     end else if (read_active_pipe & s_s_rec_nib_ready) begin
@@ -362,8 +377,8 @@ end
 
 // Trigger detection
 
-wire [(BRAM_single_wide-1):0] trigger_pipe_out;
-reg [(BRAM_single_wide-1):0] trigger_pipe;
+wire [(FIFO_IN_WIDTH-1):0] trigger_pipe_out;
+reg [(FIFO_IN_WIDTH-1):0] trigger_pipe;
 
 reg trigger;
 
@@ -406,14 +421,14 @@ generate
         rec_cmd_nib #(
             .ADDR(4'b0011)
             ) change_pattern (
-                .i_clk(i_sclk_ILA),
+                .i_clk(i_sclk_ILA_2),
                 .i_wr_en(ready_read), 
                 .i_nib(spi_nib_receive),
                 .o_hold(change_pattern_wire));
 
                 reg set_pattern_done;
         
-        always @(posedge i_sclk_ILA) begin
+        always @(posedge i_sclk_ILA_2) begin
             if (!ila_reset_register_sclk | set_pattern_done) begin
                 change_pattern_hold <= 0;
             end else if (change_pattern_wire) begin
@@ -427,7 +442,7 @@ generate
         localparam pattern_bit_count = $clog2(rec_nibb_cn); 
         reg [pattern_bit_count:0] counter_rec_pattern_byte;
 
-        always @(posedge i_sclk_ILA) begin
+        always @(posedge i_sclk_ILA_2) begin
             if (!ila_reset_register_sclk) begin
                 set_mask <= 1;
                 bit_pattern_fit <= 0;
@@ -444,7 +459,7 @@ generate
             
             end
         end
-        always @(posedge i_sclk_ILA) begin
+        always @(posedge i_sclk_ILA_2) begin
             if (!change_pattern_hold) begin
                 counter_rec_pattern_byte <= 0;
                 set_pattern_done <= 0;
@@ -476,6 +491,7 @@ generate
             end 
         end
         reg [((pipes_from_pipes*6)-1):0] pattern_match_stage_1_1, pattern_match_stage_1_2, pattern_match_stage_2;
+        reg [((pipes_from_pipes*6)-1):0] add_pipe_stage_1_1, add_pipe_stage_1_2;
         reg [1:0] pattern_match_stage_4;
         reg [(pipes*2)-1:0] sample_target_fit;
         if ((sample_width % 2) == 1) begin
@@ -501,10 +517,20 @@ generate
         for (i = 0; i < (pipes*2); i = i+2) begin : loop
             always @(posedge i_clk_ILA) begin
                 if (!ila_reset_register_clk) begin
+                    add_pipe_stage_1_1[i/2] <= 0;
+                    add_pipe_stage_1_2[i/2] <= 0;
+                end else begin
+                    add_pipe_stage_1_1[i/2] <= (sample_target_fit[i] == bit_pattern_fit[i]);
+                    add_pipe_stage_1_2[i/2] <= (sample_target_fit[i+1] == bit_pattern_fit[i+1]);
+                end
+            end
+
+            always @(posedge i_clk_ILA) begin
+                if (!ila_reset_register_clk) begin
                     pattern_match_stage_1_1[i/2] <= 0;
                 end
                 else begin
-                    pattern_match_stage_1_1[i/2] <= (bit_mask_fit[i] | (sample_target_fit[i] == bit_pattern_fit[i]));
+                    pattern_match_stage_1_1[i/2] <= (bit_mask_fit[i] | add_pipe_stage_1_1[i/2]);
                 end
             end
             always @(posedge i_clk_ILA) begin
@@ -512,7 +538,7 @@ generate
                     pattern_match_stage_1_2[i/2] <= 0;
                 end
                 else begin
-                    pattern_match_stage_1_2[i/2] <= ((bit_mask_fit[i+1] | (sample_target_fit[i+1] == bit_pattern_fit[i+1])));
+                    pattern_match_stage_1_2[i/2] <= ((bit_mask_fit[i+1] | add_pipe_stage_1_2[i/2]));
                 end
             end
             always @(posedge i_clk_ILA) begin
@@ -570,11 +596,50 @@ generate
             end
         end
         assign config_ILA = conf_trigger_start | change_pattern_hold;
-        assign trigger_detect = (trigger_activation == 2'b01) ? trigger_post_edge : ((trigger_activation == 2'b00) ? trigger_nedge_edge : trigger_detect_pattern_arrived);
+        reg trigger_1, trigger_2, trigger_3;
+        always @(posedge i_clk_ILA) begin
+            if (!ila_reset_register_clk) begin
+                trigger_1 <= 0;
+            end else if(trigger_activation == 2'b01) begin
+                trigger_1 <= trigger_post_edge;
+            end else begin
+                trigger_1 <= 0;
+            end
+        end
+        always @(posedge i_clk_ILA) begin
+            if (!ila_reset_register_clk) begin
+                trigger_2 <= 0;
+            end else if(trigger_activation == 2'b00) begin
+                trigger_2 <= trigger_nedge_edge;
+            end else begin
+                trigger_2 <= 0;
+            end
+        end
+        always @(posedge i_clk_ILA) begin
+            if (!ila_reset_register_clk) begin
+                trigger_3 <= 0;
+            end else if(trigger_activation == 2'b10) begin
+                trigger_3 <= trigger_detect_pattern_arrived;
+            end else begin
+                trigger_3 <= 0;
+            end
+        end
+
+        assign trigger_detect = trigger_3 | trigger_2 | trigger_1;
     end
     else begin
         assign config_ILA = conf_trigger_start;
-        assign trigger_detect = (trigger_activation == 2'b01) ? trigger_post_edge :  trigger_nedge_edge;
+        reg trigger_1;
+        always @(posedge i_clk_ILA) begin
+            if (!ila_reset_register_clk) begin
+                trigger_1 <= 0;
+            end else if(trigger_activation[0] == 1'b1) begin
+                trigger_1 <= trigger_post_edge;
+            end else begin
+                trigger_1 <= trigger_nedge_edge;
+            end
+        end
+        assign trigger_detect = trigger_1;
     end
 
 endgenerate
@@ -618,16 +683,15 @@ always @(posedge i_clk_ILA) begin
     end
 end
 
-bram_control #(.samples_count_before_trigger(samples_count_before_trigger), 
-            .bits_samples_count_before_trigger(bits_samples_count_before_trigger),
-            .bits_samples_count(bits_samples_count),
-            .sample_width(sample_width),
-            .BRAM_matrix_wide(BRAM_matrix_wide),
-            .BRAM_matrix_deep(BRAM_matrix_deep),
-            .BRAM_single_wide(BRAM_single_wide),
-            .BRAM_single_deep(BRAM_single_deep),
-            .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION)) mem_control (.i_clk_ILA(i_clk_ILA), 
-            .i_sclk(i_sclk_ILA),
+bram_control #(
+            .SIGNAL_SYNCHRONISATION(SIGNAL_SYNCHRONISATION),
+            .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET),
+            .FIFO_IN_WIDTH(FIFO_IN_WIDTH),
+            .FIFO_MATRIX_WIDTH(FIFO_MATRIX_WIDTH),
+            .FIFO_MATRIX_DEPH(FIFO_MATRIX_DEPH),
+            .sample_width(sample_width)
+            ) mem_control (.i_clk_ILA(i_clk_ILA), 
+            .i_sclk(i_sclk_ILA_2),
             .i_reset(trigger_active_hold),
             .i_read_active(read_active),  
             .i_sample(sample), 
@@ -638,6 +702,6 @@ bram_control #(.samples_count_before_trigger(samples_count_before_trigger),
             .trigger_row(trigger_row),
             .trigger_out(trigger_pipe_out));
 
-assign spi_nib_send = read_active ? spi_data_send : (read_active_pipe ? 4'b1110 : 4'b1010);
+assign spi_nib_send = read_active ? spi_data_send : (read_active_pipe ? 4'b1110 : (write_done ? 4'b1010 : 4'b1111));
 
 endmodule

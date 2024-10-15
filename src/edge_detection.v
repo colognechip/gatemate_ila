@@ -29,25 +29,32 @@ module edge_detection(
     input i_clk,
     input i_reset,
     input i_signal,
-    output reg o_post_edge,
-    output reg o_nedge_edge
+    output wire o_post_edge,
+    output wire o_nedge_edge
 );
 
 
-reg signal_new, signal_old; 
+reg signal_old, post_edge, nedge_edge, post_edge_hold, nedge_edge_hold;
 
 always @(posedge i_clk) begin
     if (!i_reset) begin
         signal_old <= i_signal;
-        signal_new <= i_signal;
-        o_post_edge <= 0;
-        o_nedge_edge <= 0;
+        post_edge <= 0;
+        post_edge_hold <= 0;
+        nedge_edge <= 0;
+        nedge_edge_hold <= 0;
     end else begin
-        signal_new <= i_signal;
-        signal_old <= signal_new;
-        o_post_edge <= signal_new & (~signal_old);
-        o_nedge_edge <= (~signal_new) & signal_old;
+        signal_old <= i_signal;
+        post_edge <= i_signal & (~signal_old);
+        post_edge_hold <= post_edge;
+        nedge_edge <= (~i_signal) & signal_old;
+        nedge_edge_hold <= nedge_edge;
     end
 end
+    assign o_post_edge = post_edge | post_edge_hold;
+    assign o_nedge_edge = nedge_edge | nedge_edge_hold;
+
+
+
 
 endmodule

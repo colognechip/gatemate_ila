@@ -28,10 +28,12 @@ from pyftdi.spi import SpiController
 from time import sleep
 import re, os
 import traceback
-from config import print_note, CON_DEVICE, DIRTYJTAG_CMD, DIRTYJTAG_VID, DIRTYJTAG_PID, DIRTYJTAG_SIG, DIRTYJTAG_WRITE_EP, DIRTYJTAG_READ_EP, DIRTYJTAG_TIMEOUT, JTAG_freg
+from config import print_note, CON_DEVICE, DIRTYJTAG_CMD, DIRTYJTAG_VID, DIRTYJTAG_PID, DIRTYJTAG_SIG, \
+    DIRTYJTAG_WRITE_EP, DIRTYJTAG_READ_EP, DIRTYJTAG_TIMEOUT, JTAG_freg
 import usb.core
 import usb.util
 import sys
+
 
 class ThreadWithReturnValue(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
@@ -74,9 +76,6 @@ class Communication:
             sleep(0.1)
             self.toggle_clk(1, 0, 16)
             ret = self.send_msg([0b01100000])
-            #hex_output = ' '.join(format(byte, '02x') for byte in ret)
-            #print(f"Empfangene Daten (Hex): {hex_output}")
-            #print()
             self.send_reset_ila()
 
         else:
@@ -84,7 +83,8 @@ class Communication:
                 Ftdi.show_devices()
                 output = buf.getvalue()
             if not ("ftdi://" in output):
-                print("No device found!"+os.linesep+"To be able to use this programme, you have to connect an FTDI device.")
+                print(
+                    "No device found!" + os.linesep + "To be able to use this programme, you have to connect an FTDI device.")
                 print("Please connect a device and restart the programme")
             else:
                 try:
@@ -94,14 +94,14 @@ class Communication:
                     ftdi.reset()
                     ftdi.close()
                     spi = SpiController()
-                    
-                    spi.configure(CON_LINK, turbo=True) # , turbo=True
+
+                    spi.configure(CON_LINK, turbo=True)  # , turbo=True
                     if frequency >= freq_max:
                         self.port = spi.get_port(cs=0, freq=freq_max, mode=0)
-                       #print("feq set to: " + str(freq_max))
+                    # print("feq set to: " + str(freq_max))
                     else:
                         self.port = spi.get_port(cs=0, freq=frequency, mode=0)
-                        #print("feq set to: " + str(frequency))
+                        # print("feq set to: " + str(frequency))
                     self.max_payload = spi.PAYLOAD_MAX_LENGTH
                     self.gpio = spi.get_gpio()
                     if CON_DEVICE == 'evb':
@@ -118,7 +118,7 @@ class Communication:
                     self.paket_rest = self.count_bytes_all % self.max_payload
                     sleep(0.1)
                     self.port.read(10)
-                    reply = self.port.exchange(bytearray([0b01100110]), start = False, stop = False, duplex=True)
+                    reply = self.port.exchange(bytearray([0b01100110]), start=False, stop=False, duplex=True)
                     reply = self.port.exchange(bytearray([0b01100110]), duplex=True)
                     self.send_reset_ila()
                 except Exception as exception:
@@ -129,16 +129,13 @@ class Communication:
                     traceback.print_exc()
                     sys.exit(1)
 
-
     def send_reset_ila(self):
         trys = 0
         while True:
             if CON_DEVICE == 'oli':
                 self.toggle_clk(1, 0, 8)
                 self.toggle_clk(0, 0, 8)
-            # answer = self.write_tdi(send_bytes, tdi_size)
-            # self.toggle_clk(1, 0, 8)
-            msg = bytearray([0b01100000])
+            msg = bytearray([0b01100110])
             ret = self.send_msg(msg)
             if self.check_msg(msg[0], ret[0]):
                 break
@@ -157,7 +154,6 @@ class Communication:
                     trys += 1
         return
 
-
     def write_tdi(self, tx, length):
         tx_cpy = bytearray(length)
         tx_cpy[:len(tx)] = tx
@@ -167,13 +163,13 @@ class Communication:
         tx_start_byte = 0
 
         while tx_start_byte < length:
-            byte_to_send = min((length - tx_start_byte), 62) # 62 Bytes real_bit_len, 496
+            byte_to_send = min((length - tx_start_byte), 62)  # 62 Bytes real_bit_len, 496
             if byte_to_send > 32:
                 tx_buf[0] |= 0x40  # EXTEND_LENGTH
-                tx_buf[1] = (byte_to_send*8) - 256
+                tx_buf[1] = (byte_to_send * 8) - 256
             else:
                 tx_buf[0] &= ~0x40  # EXTEND_LENGTH
-                tx_buf[1] = (byte_to_send*8)
+                tx_buf[1] = (byte_to_send * 8)
 
             tx_buf[2:2 + byte_to_send] = tx_cpy[tx_start_byte:(byte_to_send + tx_start_byte)]
             try:
@@ -188,20 +184,17 @@ class Communication:
                 return -1
 
             transfer_length = byte_to_send if byte_to_send > 32 else 32
-            
+
             while True:
                 try:
                     ret = self.dev.read(DIRTYJTAG_READ_EP, transfer_length, DIRTYJTAG_TIMEOUT)
                     if len(ret) > 0:
-                        #hex_output = ' '.join(format(byte, '02x') for byte in ret)
-                        #print(f"Empfangene Daten (Hex): {hex_output}")
-                        #print("empfangen größe = " + str(len(ret)))
                         rx_arr += ret[:byte_to_send]
                         break
                 except usb.core.USBError as e:
                     print(f"writeTDI: read: usb bulk read failed {e}")
                     return -1
-                
+
             tx_start_byte += byte_to_send
 
         return rx_arr
@@ -218,7 +211,6 @@ class Communication:
         except usb.core.USBError as e:
             print(f"toggleClk: usb bulk write failed {e}")
             return -1
-
 
     def toggle_clk(self, tms, tdi, clk_len):
         while clk_len > 0:
@@ -237,9 +229,7 @@ class Communication:
 
             clk_len -= buf[2]
 
-
         return 0
-
 
     def reset_FPGA(self):
         from config import CON_DEVICE
@@ -249,29 +239,23 @@ class Communication:
             self.gpio.write(0x0010)
             sleep(0.01)
         elif CON_DEVICE == 'pgm':
-           self.gpio.write(0x0010)
-           sleep(0.01)
-           self.gpio.write(0x0210)
-           sleep(0.01)
+            self.gpio.write(0x0010)
+            sleep(0.01)
+            self.gpio.write(0x0210)
+            sleep(0.01)
         elif CON_DEVICE == 'oli':
             self.cmd_set_signal(DIRTYJTAG_SIG["SIG_SRST"], 0)
             sleep(0.01)
             self.cmd_set_signal(DIRTYJTAG_SIG["SIG_SRST"], DIRTYJTAG_SIG["SIG_SRST"])
-        
 
-
-
-    def send_msg(self, send_bytes, tdi_size = None):
+    def send_msg(self, send_bytes, tdi_size=None):
         if CON_DEVICE == 'oli':
             if tdi_size is None:
                 tdi_size = len(send_bytes)
-            #self.toggle_clk(0, 0, 8)
             answer = self.write_tdi(send_bytes, tdi_size)
-            #self.toggle_clk(1, 0, 8)
             return answer
         else:
             return self.port.exchange(send_bytes, duplex=True)
-
 
     def check_msg(self, send, reply):
         lower_4_bits_reply = reply & 0x0F
@@ -280,7 +264,8 @@ class Communication:
             return False
         else:
             return True
-#
+
+    #
 
     def read_spi(self, trigger):
         t = ThreadWithReturnValue(target=interrupt_input)
@@ -293,7 +278,6 @@ class Communication:
             if trig["pattern_msg"] is not None:
                 self.send_msg(trig["pattern_msg"])
             send_msg_m = list(trig["trigger"]) + [trig["activation"]]
-
             self.send_msg(list(send_msg_m))
             start_time = time.perf_counter()
             while 1:
@@ -321,10 +305,5 @@ class Communication:
         print(print_note(output_time, " Duration between captures "))
         return answer_all, t
 
-
-
     def reset_DUT(self):
         return self.send_msg([0b10100000])
-
-
-

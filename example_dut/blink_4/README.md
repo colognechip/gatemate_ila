@@ -29,9 +29,9 @@ The remaining configurations were made as follows:
         Counter that is incremented with the 12.5 MHz clock.
     2. **counter_2** [24:0]  
         Counter that is incremented with the 25.0 MHz clock.
-    3. **counter_3** [24:0]  
+    3. **counter_3** [29:0]  
         Counter that is incremented with the 50.0 MHz clock.
-    4. **counter_4** [24:0]  
+    4. **counter_4** [29:0]  
         Counter that is incremented with the 100.0 MHz clock.
     5. **clk0_1**
         12.5 MHz clock signal from PLL 1.
@@ -40,42 +40,49 @@ The remaining configurations were made as follows:
     7. **clk0_3**
         50.0 MHz clock signal from PLL 3.
 
-- Capture duration before Trigger: Sample count = 1015, Capture duration = 10.15 us
-- Capture duration after Trigger: Sample count = 1033, Capture duration = 10.33 us
-
-
-As a trigger, a pattern was set across the lowest 12 bits of counter_4. The pattern was hex 0x3E8, equivalent to 1000 in decimal.
-
-Then the DUT was hold in reset until the capture was started. 
 
 
 ## Generated waveform and outcome
 
-![waveform start](example_output/ILA_waveform_start.png)
-In the **waveform start** screenshot, it is evident that the first 6 recorded samples are zero, indicating that the DUT was still in reset at that time.
+![waveform start](example_output/blink_4_waveform.png)
 
-![waveform trigger](example_output/ILA_waveform_trigger.png)
-At sample 1006 in screenshot **waveform trigger**, which is 1000 samples later, it can be seen that the trigger was activated because counter_4, which increments at the same frequency as the ILA samples, has reached the value of 1000 (hex 3e8).
 
-## Utilization Report 
+## Utilization Report
 
- CPEs                   1697 /  20480  (  8.3 %)
+
+ CPEs                   1843 /  20480  (  9.0 %)
  -----------------------------------------------
-   CPE Registers         932 /  40960  (  2.3 %)
-     Flip-flops          932
+   CPE Registers        1146 /  40960  (  2.8 %)
+     Flip-flops         1146
      Latches               0
 
-
-
- Block RAMs              7.0 /     32  ( 21.9 %)
+ GPIOs                    13 /    162  (  8.0 %)
  -----------------------------------------------
-   BRAM_20K                3 /     64  (  4.7 %)
-   BRAM_40K                4 /     32  ( 12.5 %)
+   Single-ended           13 /    162  (  8.0 %)
+     IBF                   4
+     OBF                   9
+     TOBF                  0
+     IOBF                  0
+   LVDS pairs              0 /     81  (  0.0 %)
+     IBF                   0
+     OBF                   0
+     TOBF                  0
+     IOBF                  0
 
+ GPIO Registers            0 /    324  (  0.0 %)
+ -----------------------------------------------
+   FF_IBF                  0
+   FF_OBF                  0
+   IDDR                    0
+   ODDR                    0
+
+ Block RAMs              9.0 /     32  ( 28.1 %)
+ -----------------------------------------------
+   BRAM_20K                0 /     64  (  0.0 %)
+   BRAM_40K                0 /     32  (  0.0 %)
+   FIFO_40K                9 /     32  ( 28.1 %)
 
  PLLs                      4 /      4  (100.0 %)
  GLBs                      4 /      4  (100.0 %)
  SerDes                    0 /      1  (  0.0 %)
  USR_RSTN                  1 /      1  (100.0 %)
-
-

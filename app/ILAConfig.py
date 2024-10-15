@@ -140,6 +140,13 @@ def insert_line_break(text, character):
     return result
 
 
+def is_value_present(value, max_BRAM_count):
+    for entry in max_BRAM_count:
+        if value == entry[0]:
+            return True
+    return False
+
+
 def out_signal(signal):
     if signal["Signal_range"] is not None:
         return signal["Signal_type"] + " " + signal["Signal_range"] + " " + signal["Signal_name"]
@@ -203,6 +210,16 @@ class ILAConfig:
     explanation_DUT_BRAMS = ""
 
     def __init__(self):
+        self.FIFO_SMP_CNT_before = None
+        self.explanation_speed = "Configure ILA for best performance. Max Sample Width = 40, the number of samples depends on the sample width."
+        self.speed = False
+        self.explanation_sample_compare_pattern = "With this parameter, you can toggle the pattern compare function, " \
+                                                  "reducing logic use and shortening the critical path when deactivated."
+        self.sample_compare_pattern = False
+        self.explanation_sync_level = "Determines the number of register levels via which the signals to be analysed are synchronised."
+        self.sync_level = 2
+        self.explanation_ILA_clk_delay = "here you can set the delay of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2)"
+        self.ILA_clk_delay = 2
         self.explanation_ILA_sampling_freq_MHz = "The string represents the frequency in MHz at which the signals " \
                                                  "under test are captured. String that contains only a decimal number."
         self.ILA_sampling_freq_MHz = ""
@@ -228,16 +245,12 @@ class ILAConfig:
         self.explanation_clk_name = "Name of the DUT clk-input port. The clk-source is crucial as it also serves as " \
                                     "the ILA's clk source"
         self.clk_name = None
-        self.explanation_sample_compare_pattern = "With this parameter, you can toggle the pattern compare function, " \
-                                                  "reducing logic use and shortening the critical path when deactivated."
-        self.sample_compare_pattern = 0
-        self.explanation_ILA_clk_delay = "here you can set the delay of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2)"
-        self.ILA_clk_delay = 2
-        self.explanation_sync_level = "Determines the number of register levels via which the signals to be analysed are synchronised."
-        self.sync_level = 0
+        self.input_ctrl_signal_name = None
+        self.input_ctrl = False
+        self.sample_count = None
+        self.input_ctrl_size = 0
         self.explanation_opt = "This optimizes the design by deleting all unused signals before signal evaluation."
         self.opt = False
-
         self.explanation_verilog_sources = "[(paths to the folder containing the Verilog source code files)]"
         self.verilog_sources = []
         self.explanation_VHDL_sources = "[(paths to the folder containing the VHDL source code files)]"
@@ -253,9 +266,10 @@ class ILAConfig:
         self.DUT_BRAMS_40k = 0
         self.external_clk_pin = False
         self.external_clk_pin_name = ""
+        self.FIFO_MATRIX_DEPH = None
+        self.FIFO_IN_SIZE = None
+        self.FIFO_MATRIX_size = None
         self.DUT_file_name_flat = None
-        self.bram_single_wide = 1
-        self.bram_matrix_wide = 1
         self.ports_DUT = []
         self.toolchain_info = ""
         now = datetime.datetime.now()
@@ -264,8 +278,6 @@ class ILAConfig:
         self.use_cc_rst = False
         # self.combine_external_reset = False
         self.bits_samples_count = None
-        self.bits_samples_count_before_trigger = None
-        self.samples_count_before_trigger = None
         self.use_reset_fuction = None
         self.explanation_SUT_ccf_file_source = "Folder containing the .ccf file"
         self.SUT_ccf_file_source = ""
@@ -288,6 +300,7 @@ class ILAConfig:
 
     def set_sync_level(self, sync_level):
         self.sync_level = sync_level
+
 
     @staticmethod
     def load_from_json(file_name):
@@ -314,6 +327,12 @@ class ILAConfig:
             SUT_files_sources_folder_verilog = []
             SUT_files_sources_folder_verilog_namen = []
             for source in self.verilog_sources:
+                if not os.path.exists(source):
+                    if not os.path.exists(source):
+                        print(print_note(
+                            [f"The provided path '{source}' does not exist."
+                             ],
+                            " Warning ", '!'))
                 SUT_files_sources_folder_verilog += get_files_with_extension(source, 'v')
             for Namen in SUT_files_sources_folder_verilog:
                 SUT_files_sources_folder_verilog_namen.append(Namen.split(os.path.sep)[-1])
@@ -329,11 +348,19 @@ class ILAConfig:
     def set_VHDL(self, vhdl_source):
         self.VHDL_sources = vhdl_source
 
+    def set_speed(self, speed):
+        self.speed = speed
+
     def get_yosys_cmd_VHDL(self):
         if len(self.VHDL_sources) > 0:
             SUT_files_sources_folder_vhdl = []
             SUT_files_sources_folder_vhdl_namen = []
             for source in self.VHDL_sources:
+                if not os.path.exists(source):
+                    print(print_note(
+                        [f"The provided path '{source}' does not exist."
+                         ],
+                        " Warning ", '!'))
                 SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhd')
                 SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhdl')
             for Namen in SUT_files_sources_folder_vhdl:
@@ -351,10 +378,14 @@ class ILAConfig:
         self.SUT_top_name = SUT_top_name
 
     def set_DUT_ccf(self, ccf_source):
-
+        if not os.path.exists(ccf_source):
+            print(print_note(
+                [f"The provided path '{ccf_source}' does not exist."
+                 ],
+                " Warning ", '!'))
+            return False
         ccf_file_source = get_files_with_extension(ccf_source, 'ccf')
         if len(ccf_file_source) == 0:
-            print("Error! No ccf file was found in the given folder!!" + os.linesep)
             return False
         else:
             self.SUT_ccf_file_source = ccf_file_source[0]
@@ -679,7 +710,7 @@ class ILAConfig:
         print(print_note(["The sampling frequency determines the rate at which signals are captured.",
                           "When selecting the frequency, ensure it is harmonious with the DUT's frequency,",
                           " either matching or an integral multiple.",
-                          "Recommended max. sampling frequency up to 160MHz.",
+                          "Recommended max. sampling frequency up to 200MHz.",
                           ],
                          " Note ", '!'))
         input_wrong = True
@@ -695,177 +726,200 @@ class ILAConfig:
 
     def calk_RAM(self, total_size):
         #
-        # Cologne Chip Block-RAM TDP
-        #
-        #   split:
-        # • 4K x 5 bit
-        # • 2K x 10 bit
-        # • 1K x 20 bit
-        #
-        #  non-split:
-        #
+        # Cologne Chip FIFO
+        #  32K x 1 bit
+        # • 16K x 2 bit
         # • 8K x 5 bit
         # • 4K x 10 bit
         # • 2K x 20 bit
         # • 1K x 40 bit
-        #
+
         from config import available_BRAM
-        count_5_bit = math.ceil(total_size / 5)
-        count_10_bit = math.ceil(total_size / 10)
-        count_20_bit = math.ceil(total_size / 20)
-        count_40_bit = math.ceil(total_size / 40)
 
-        available_20k_BRAMs = available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))
-        available_40k_BRAMs = (available_BRAM / 2) - (math.ceil(self.DUT_BRAMS_20k / 2) + self.DUT_BRAMS_40k)
+        available_40k_BRAMs = available_BRAM - (math.ceil(self.DUT_BRAMS_20k / 2) + self.DUT_BRAMS_40k)
         max_BRAM_count = []
-        # 0 = max_deph_5_bit_20k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_20k_BRAMs / count_5_bit)) * 4096)
-        # 1 = max_deph_5_bit_40k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_40k_BRAMs / count_5_bit)) * 8192)
-        # 2 = max_deph_10_bit_20k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_20k_BRAMs / count_10_bit)) * 2048)
-        # 3 = max_deph_10_bit_40k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_40k_BRAMs / count_10_bit)) * 4096)
-        # 4 = max_deph_20_bit_20k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_20k_BRAMs / count_20_bit)) * 1024)
-        # 5 = max_deph_20_bit_40k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_40k_BRAMs / count_20_bit)) * 2048)
-        # 6 = max_deph_40_bit_40k
-        max_BRAM_count.append(
-            check_and_round_down_to_next_power_of_two(math.floor(available_40k_BRAMs / count_40_bit)) * 1024)
-        return max(max_BRAM_count)
+        min_BRAMs_deph = 6
+        if total_size == 1:
+            for i in range(min(available_40k_BRAMs, min_BRAMs_deph)):
+                value = (i + 1) * 32768
+                max_BRAM_count.append([value, 1, 1, (i + 1), 32768])
+        elif total_size == 2:
+            for i in range(min(available_40k_BRAMs)):
+                value = (i + 1) * 16384
+                max_BRAM_count.append([value, 2, 1, (i + 1), 16384])
+        else:
+            count_5_bit_width = math.ceil(total_size / 5)
+            if count_5_bit_width <= 5:
+                count_5_bit_deph = available_40k_BRAMs // count_5_bit_width
+                for i in range(min(count_5_bit_deph, min_BRAMs_deph)):
+                    value = (i + 1) * 8192
+                    max_BRAM_count.append([value, 5, count_5_bit_width, (i + 1), 8192])
+            if total_size > 5:
+                count_10_bit_width = math.ceil(total_size / 10)
+                if count_10_bit_width <= 5:
+                    count_10_bit_deph = available_40k_BRAMs // count_10_bit_width
+                    for i in range(min(count_10_bit_deph, min_BRAMs_deph)):
+                        value = (i + 1) * 4096
+                        if not is_value_present(value, max_BRAM_count):
+                            max_BRAM_count.append([value, 10, count_10_bit_width, (i + 1), 4096])
+            if total_size > 15:
+                # Einträge für 20-Bit Breite
+                count_20_bit_width = math.ceil(total_size / 20)
+                count_20_bit_deph = available_40k_BRAMs // count_20_bit_width
+                if (total_size % 20) < 10:
+                    for i in range(min(count_20_bit_deph, min_BRAMs_deph)):
+                        value = (i + 1) * 2048
+                        if not is_value_present(value, max_BRAM_count):
+                            max_BRAM_count.append([value, 20, count_20_bit_width,(i + 1), 2048])
+            if total_size > 30:
+                count_40_bit_width = math.ceil(total_size / 40)
+                count_40_bit_deph = available_40k_BRAMs // count_40_bit_width
+                for i in range(min(count_40_bit_deph, min_BRAMs_deph)):
+                    value = (i + 1) * 1024
+                    if not is_value_present(value, max_BRAM_count):
+                        max_BRAM_count.append([value, 40, count_40_bit_width, (i + 1), 1024])
+            max_BRAM_count.sort(key=lambda x: x[0])
 
-    def BRAM_config(self, total_size, total_deep):
-        all_BRAM_count = []
-        # 5_bit_20k
-        ma_wide_5 = math.ceil(total_size / 5)
-        ma_wide_10 = math.ceil(total_size / 10)
-        ma_wide_20 = math.ceil(total_size / 20)
-        ma_wide_40 = math.ceil(total_size / 40)
+        return max_BRAM_count
 
-        ma_deep_12 = check_and_round_to_next_power_of_two(math.ceil(total_deep / 4096))
-        ma_deep_11 = check_and_round_to_next_power_of_two(math.ceil(total_deep / 2048))
-        ma_deep_13 = check_and_round_to_next_power_of_two(math.ceil(total_deep / 8192))
-        ma_deep_10 = check_and_round_to_next_power_of_two(math.ceil(total_deep / 1024))
-
-        all_BRAM_count.append({"wide": ma_wide_5, "deep": ma_deep_12, "single_wide": 5,
-                               "single_deep": 12, "consumption": (ma_wide_5 * ma_deep_12)})
-        # 5_bit_40k
-        all_BRAM_count.append({"wide": ma_wide_5, "deep": ma_deep_13, "single_wide": 5,
-                               "single_deep": 13, "consumption": ((ma_wide_5 * ma_deep_13 * 2)-1)})
-        # 10_bit_20k
-        all_BRAM_count.append({"wide": ma_wide_10, "deep": ma_deep_11,
-                               "single_wide": 10, "single_deep": 11, "consumption": (ma_wide_10 * ma_deep_11)})
-        # 10_bit_40k
-        all_BRAM_count.append({"wide": ma_wide_10, "deep": ma_deep_12,
-                               "single_wide": 10, "single_deep": 12, "consumption": ((ma_wide_10 * ma_deep_12 * 2)-1)})
-        # 20_bit_20k
-        all_BRAM_count.append({"wide": ma_wide_20, "deep": ma_deep_10,
-                               "single_wide": 20, "single_deep": 10, "consumption": ma_wide_20 * ma_deep_10})
-        # 20_bit_40k
-        all_BRAM_count.append({"wide": ma_wide_20, "deep": ma_deep_11,
-                               "single_wide": 20, "single_deep": 11, "consumption": ((ma_wide_20 * ma_deep_11 * 2)-1)})
-        # 40_bit_20k
-        all_BRAM_count.append({"wide": ma_wide_40, "deep": ma_deep_10, "single_wide": 40, "single_deep": 10,
-                               "consumption": ((ma_wide_40 * ma_deep_10 * 2)-1)})
-        return min(all_BRAM_count, key=lambda x: (x["consumption"], x["deep"]))
 
     def choose_Capture_time(self, total_size):
-        max_samples = self.calk_RAM(total_size)
+        # Cologne Chip FIFO
+        #  32K x 1 bit
+        # • 16K x 2 bit
+        # • 8K x 5 bit
+        # • 4K x 10 bit
+        # • 2K x 20 bit
+        # • 1K x 40 bit
+        if self.speed:
+            self.FIFO_MATRIX_DEPH =1
+            self.FIFO_MATRIX_size = 1
+            if total_size == 1:
+                self.sample_count = 32768
+                self.FIFO_IN_SIZE = 1
+            elif total_size == 2:
+                self.sample_count = 16384
+                self.FIFO_IN_SIZE = 2
+            elif total_size <= 5:
+                self.sample_count = 8192
+                self.FIFO_IN_SIZE = 5
+            elif total_size <= 10:
+                self.sample_count = 4096
+                self.FIFO_IN_SIZE = 10
+            elif total_size <= 20:
+                self.sample_count = 2048
+                self.FIFO_IN_SIZE = 20
+            elif total_size <= 40:
+                self.sample_count = 1024
+                self.FIFO_IN_SIZE = 40
+            print(print_note(
+                ["Sample count = " + str(self.sample_count),
+                 "Capture duration = " + str(round(self.sample_count / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
+                " Capture duration ", '#'))
+            return self.choose_smp_before()[1]
+
+        all_configs = self.calk_RAM(total_size) # max_BRAM_count.append([samples_5_bit, value, 5, count_5_bit_width])
         print(print_note(
             ["The capture duration must be defined.",
              "The maximum duration depends on:",
              " - available ram  ",
              " - width of the sample  ",
-             " - sampling frequency"
+             " - sampling frequency",
+             "FIFO Cascade (Width x Depth)",
+             "FIFO (Input Width x Depth)"
              ],
             " Note ", '!'))
         complete = False
         while not complete:
-            power_2 = 32
-            all_power_2 = []
-            x = 5
             table = PrettyTable()
-            table.field_names = ["#", "smp_cnt", "duration [us]"]
-            while power_2 < max_samples:
-                all_power_2.append([x, power_2, round((power_2 - 9) / float(self.ILA_sampling_freq_MHz), 2)])
-                table.add_row([all_power_2[-1][0] - 4, all_power_2[-1][1] - 9, all_power_2[-1][2]])
-                power_2 = power_2 * 2
-                x = x + 1
+            table.field_names = ["#", "smp_cnt", "duration [us]", "FIFO Cascade", "FIFO" ]
+            for x in range(len(all_configs)):
+                table.add_row([x+1, all_configs[x][0], round(all_configs[x][0] / float(self.ILA_sampling_freq_MHz), 2),
+                               str(f"{all_configs[x][2]} x {all_configs[x][3]}"), str(f"{all_configs[x][1]} x {all_configs[x][4]}")])
             for field in table.field_names:
                 table.align[field] = "r"
-            table._rows.pop()
             print_table("Please choose one of the following durations: ", table)
-            all_power_2.append([x, power_2, round(power_2 / float(self.ILA_sampling_freq_MHz), 2)])
-
             while True:
                 input_usr = input(
-                    os.linesep + "Capture duration before trigger activation (choose between 1 and " + str(
-                        x - 6) + "): ").lower()
+                    os.linesep + "Total Capture duration (choose between 1 and " + str(
+                        len(all_configs)) + "): ").lower()
                 if input_usr in ['e', 'p']:
                     return input_usr
                 else:
                     try:
                         choice = int(input_usr)
-                        if 0 < choice < (x - 5):
-                            self.samples_count_before_trigger = all_power_2[choice - 1][1]
-                            self.bits_samples_count_before_trigger = all_power_2[choice - 1][0]
+                        if 0 < choice < (len(all_configs) +1):
+                            self.sample_count = all_configs[choice-1][0]
+                            self.FIFO_MATRIX_DEPH = all_configs[choice-1][3]
+                            self.FIFO_IN_SIZE = all_configs[choice-1][1]
+                            self.FIFO_MATRIX_size = all_configs[choice-1][2]
                             print(print_note(
-                                ["Sample count = " + str(self.samples_count_before_trigger - 9),
-                                 "Capture duration = " + str(all_power_2[choice - 1][2]) + " us"],
-                                " Capture duration before Trigger ", '#'))
+                                ["Sample count = " + str(self.sample_count),
+                                 "Capture duration = " + str(round(self.sample_count / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
+                                " Capture duration ", '#'))
                             break
                         else:
                             print("ERROR! Input out of range!")
                     except Exception as e:
+                        print(e)
                         print("ERROR! Invalid Input!")
-
-            table = PrettyTable()
-            table.field_names = ["#", "smp_cnt", "duration [us]"]
-            y = 0
-            all_power_after = []
-            for x in range(len(all_power_2)):
-                all_power_2[x][1] = all_power_2[x][1] - self.samples_count_before_trigger + 9
-                all_power_2[x][2] = round((all_power_2[x][1]) / float(self.ILA_sampling_freq_MHz), 2)
-
-                if all_power_2[x][1] > 16:
-                    all_power_after.append(all_power_2[x])
-                    table.add_row([y + 1, all_power_2[x][1], all_power_2[x][2]])
-                    y += 1
-            for field in table.field_names:
-                table.align[field] = "r"
-            print_table("Please choose one of the following durations: ", table)
-
-            while True:
-                input_usr = input(
-                    os.linesep + "Capture duration after trigger activation (choose between 1 and " + str(
-                        y) + "): ").lower()
-                if input_usr == 'p':
-                    break
-                elif input_usr == 'e':
-                    return input_usr
-                else:
-                    try:
-                        choice = int(input_usr)
-                        if 0 < choice <= y:
-                            self.bits_samples_count = all_power_after[choice - 1][0]
-                            print(print_note(
-                                ["Sample count = " + str(all_power_after[choice - 1][1]),
-                                 "Capture duration = " + str(all_power_after[choice - 1][2]) + " us"],
-                                " Capture duration after Trigger ", '#'))
-                            complete = True
-                            break
-                        else:
-                            print("ERROR! Input out of range!")
-                    except Exception as e:
-                        print("ERROR! Invalid Input!")
+            complete, input_usr = self.choose_smp_before()
+            if input_usr == 'e':
+                return input_usr
         return ""
+
+
+
+    def choose_smp_before(self):
+        pipeline_offset = 3
+        while True:
+            input_usr = input(
+                os.linesep + "Enter the number of capture samples before trigger activation (between 0 and 250): "
+            )
+            if input_usr == 'p':
+                return False, input_usr
+            elif input_usr == 'e':
+                return False, input_usr
+            else:
+                try:
+                    choice = int(input_usr)
+                    if 0 <= choice <= 250:
+                        self.FIFO_SMP_CNT_before = choice + pipeline_offset
+                        print(print_note(
+                            ["Sample count = " + str(self.FIFO_SMP_CNT_before - pipeline_offset),
+                             "Capture duration = " + str(
+                                 round(self.FIFO_SMP_CNT_before / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
+                            " Capture duration before Trigger ", '#'))
+                        return True, ""
+                    else:
+                        print("ERROR! Input out of range!")
+                except Exception as e:
+                    print("ERROR! Invalid Input!")
+
+
+    def choose_input_ctrl(self):
+        note = print_note(
+            ["You can override an input or input-vector of your top-level entity using the ILA.",
+             "Please note that the input will no longer be connected to the FPGA's IO pins.",
+             ],
+            " Note ", '!')
+        print(note)
+        user_input = input(
+            os.linesep + "Would you like to implement the input control feature? (y/N): ").lower()
+        if user_input == "y":
+            names = self.print_inputs_DUT()
+            in_state, usr_in = get_port_idx(os.linesep + "Select an input signal: ", len(names))
+            if not in_state:
+                if usr_in == 'p' or usr_in == 'e':
+                    return usr_in
+            else:
+                self.input_ctrl_signal_name = names[usr_in]
+                # get Port Index??
+                self.input_ctrl = True
+                return usr_in
+        else:
+            self.input_ctrl = False
+            return user_input
 
     def choose_pattern_compare(self):
         note = print_note(
@@ -881,7 +935,7 @@ class ILAConfig:
             " Note ", '!')
         print(note)
         user_input = input(
-            os.linesep + "Would you like me to implement the function for comparing bit patterns? (y/N): ").lower()
+            os.linesep + "Would you like to implement the function for comparing bit patterns? (y/N): ").lower()
         if user_input == "y":
             self.sample_compare_pattern = True
         else:
@@ -896,7 +950,7 @@ class ILAConfig:
                           "Enter 'p' for 'previous' to backtrack a step."], " NOTE ", '!'))
         step = 0
         usr_in = ""
-        while step < 5:
+        while step < 6:
             if step == 0:
                 usr_in = self.choose_clk_source(found_pll)
                 if usr_in == 'e':
@@ -913,6 +967,8 @@ class ILAConfig:
             elif step == 3:
                 usr_in = self.choose_Capture_time(total_size)
             elif step == 4:
+                usr_in = self.choose_input_ctrl()
+            elif step == 5:
                 if total_size > 4:
                     usr_in = self.choose_pattern_compare()
                 else:
@@ -1104,6 +1160,9 @@ class ILAConfig:
     def choose_analysed_signals(self, total_size=0):
         from config import available_BRAM
         max_signals = (available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 20
+        if self.speed:
+            max_signals = 40
+
         print(print_note(
             ["You will be prompted to select signals for analysis from those found in your design under test."],
             " NOTE ", '!'))
@@ -1461,10 +1520,17 @@ class ILAConfig:
         insert_str = os.linesep
 
         for single_signal in self.ports_DUT:
-            insert_str += out_signal(single_signal) + "," + os.linesep
-            if single_signal["Signal_name"] == self.reset_name and self.use_reset_fuction and (not self.use_cc_rst):
-                continue
-            instance_of_dut += "." + single_signal["Signal_name"] + "(" + single_signal["Signal_name"] + "), "
+            if self.input_ctrl and single_signal["Signal_name"] == self.input_ctrl_signal_name:
+                if single_signal["Signal_range"] is not None:
+                    self.input_ctrl_size = get_size_vec(single_signal["Signal_range"].strip('[]'))
+                else:
+                    self.input_ctrl_size = 1
+                instance_of_dut += "." + single_signal["Signal_name"] + "(" + single_signal["Signal_name"] + "_DUT_ILA_34), "
+            else:
+                insert_str += out_signal(single_signal) + "," + os.linesep
+                if single_signal["Signal_name"] == self.reset_name and self.use_reset_fuction and (not self.use_cc_rst):
+                    continue
+                instance_of_dut += "." + single_signal["Signal_name"] + "(" + single_signal["Signal_name"] + "), "
 
 
         instance_of_dut = instance_of_dut[:-2] + ", .ila_sample_dut(sample));"
@@ -1473,48 +1539,39 @@ class ILAConfig:
         with open('..'+ os.path.sep +'src'+ os.path.sep +'ILA_top.v', "r") as file:
             content = file.read()
             content = content.replace(
+                re.search(r"parameter USE_USR_RESET = \d+", content).group(),
+                f"parameter USE_USR_RESET = {str(int(self.use_reset_fuction))}")
+            content = content.replace(
                 re.search(r"parameter USE_PLL = \d+", content).group(),
                 f"parameter USE_PLL = {str(int(self.make_pll))}")
             content = content.replace(
-                re.search(r"parameter USE_USR_RESET = \d+", content).group(),
-                f"parameter USE_USR_RESET = {str(int(self.use_reset_fuction))}")
-            RAM_speci = self.BRAM_config(sample_total_size[0], 2 ** self.bits_samples_count)
-            self.bram_single_wide = RAM_speci['single_wide']
-            self.bram_matrix_wide = RAM_speci['wide']
+                re.search(r"parameter USE_FEATURE_PATTERN = \d+", content).group(),
+                f"parameter USE_FEATURE_PATTERN = {str(int(self.sample_compare_pattern))}")
             content = content.replace(
-                re.search(r"parameter BRAM_matrix_wide = \d+", content).group(),
-                f"parameter BRAM_matrix_wide = {RAM_speci['wide']}")
+                re.search(r"parameter INPUT_CTRL_size = \d+", content).group(),
+                f"parameter INPUT_CTRL_size = {str(self.input_ctrl_size)}")
+            hex_value = format(self.FIFO_SMP_CNT_before, 'X')
             content = content.replace(
-                re.search(r"parameter BRAM_matrix_deep = \d+", content).group(),
-                f"parameter BRAM_matrix_deep = {RAM_speci['deep']}")
+                re.search(r"parameter \[14:0\] ALMOST_EMPTY_OFFSET = 15'h[0-9A-Fa-f]+", content).group(),
+                f"parameter [14:0] ALMOST_EMPTY_OFFSET = 15'h{hex_value}")
             content = content.replace(
-                re.search(r"parameter BRAM_single_wide = \d+", content).group(),
-                f"parameter BRAM_single_wide = {RAM_speci['single_wide']}")
+                re.search(r"parameter FIFO_IN_WIDTH = \d+", content).group(),
+                f"parameter FIFO_IN_WIDTH = {self.FIFO_IN_SIZE}")
             content = content.replace(
-                re.search(r"parameter BRAM_single_deep = \d+", content).group(),
-                f"parameter BRAM_single_deep = {RAM_speci['single_deep']}")
+                re.search(r"parameter FIFO_MATRIX_WIDTH = \d+", content).group(),
+                f"parameter FIFO_MATRIX_WIDTH = {self.FIFO_MATRIX_size}")
             content = content.replace(
-                re.search(r"parameter samples_count_before_trigger = \d+", content).group(),
-                f"parameter samples_count_before_trigger = {self.samples_count_before_trigger}")
-            content = content.replace(
-                re.search(r"parameter bits_samples_count_before_trigger = \d+", content).group(),
-                f"parameter bits_samples_count_before_trigger = {self.bits_samples_count_before_trigger - 1}")
-            content = content.replace(
-                re.search(r"parameter bits_samples_count = \d+", content).group(),
-                f"parameter bits_samples_count = {self.bits_samples_count - 1}")
-
-            content = content.replace(
-                re.search(r'parameter sampling_freq_MHz = "\d+.?\d*?"', content).group(),
-                f'parameter sampling_freq_MHz = "{self.ILA_sampling_freq_MHz}"')
-            content = content.replace(
-                re.search(r'parameter external_clk_freq = "\d+.?\d+?"', content).group(),
-                f'parameter external_clk_freq = "{self.external_clk_freq}"')
+                re.search(r"parameter FIFO_MATRIX_DEPH = \d+", content).group(),
+                f"parameter FIFO_MATRIX_DEPH = {self.FIFO_MATRIX_DEPH}")
             content = content.replace(
                 re.search(r"parameter sample_width = \d+", content).group(),
                 f"parameter sample_width = {sample_total_size[0]}")
             content = content.replace(
-                re.search(r"parameter USE_FEATURE_PATTERN = \d+", content).group(),
-                f"parameter USE_FEATURE_PATTERN = {str(int(self.sample_compare_pattern))}")
+                re.search(r'parameter external_clk_freq = "\d+.?\d+?"', content).group(),
+                f'parameter external_clk_freq = "{self.external_clk_freq}"')
+            content = content.replace(
+                re.search(r'parameter sampling_freq_MHz = "\d+.?\d*?"', content).group(),
+                f'parameter sampling_freq_MHz = "{self.ILA_sampling_freq_MHz}"')
             content = content.replace(
                 re.search(r"parameter clk_delay = \d+", content).group(),
                 f"parameter clk_delay = {str(self.ILA_clk_delay)}")
@@ -1529,8 +1586,12 @@ class ILAConfig:
                 content = content[:start_index] + insert_str + content[end_index:]
             start_index = content.find(start_comment_SUT) + len(start_comment_SUT)
             end_index = content.find(end_comment_SUT)
+            input_ctrl_str = ""
+            if self.input_ctrl:
+                input_ctrl_str = "reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;" + os.linesep +"wire [INPUT_CTRL_size-1:0] " + self.input_ctrl_signal_name + "_DUT_ILA_34;" + os.linesep + \
+                "assign " + self.input_ctrl_signal_name + "_DUT_ILA_34 = input_ctrl_DUT;" + os.linesep
             if start_index != -1 and end_index != -1:
-                content = content[:start_index] + os.linesep + instance_of_dut + os.linesep + content[end_index:]
+                content = content[:start_index] + os.linesep + input_ctrl_str + instance_of_dut + os.linesep + content[end_index:]
         with open('..'+ os.path.sep +'src'+ os.path.sep +'ILA_top.v', "w") as file:
             file.write(content)
 
@@ -1569,7 +1630,6 @@ class ILAConfig:
         log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'impl.log'
         p_r_command = PR + ' -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
                       ccf_file_ila_source + '  > ' + log_file
-        
         time.sleep(3)
         print(os.linesep + "Execute Implementation..." + os.linesep + "Output permanently saved to: " + log_file)
         if not execute_tool(p_r_command, output_file_p_r + '_00.cfg', log_file):

@@ -27,14 +27,14 @@ YOSYS_FLAGS = '-nomx8'
 PR = 'p_r'
 PR_FLAGS = '-cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
 UPLOAD = 'openFPGALoader'
-UPLOAD_FLAGS = ' -b gatemate_evb_jtag ' # gatemate_evb_jtag,  olimex_gatemateevb
+UPLOAD_FLAGS = ' -b gatemate_evb_jtag ' # gatemate_evb_jtag,  olimex_gatemateevb, -c gatemate_pgm
 REPRESENTATION_SOFTWARE = ['gtkwave']
 REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
 CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm', Olimex = 'oli'  freely customisable mode = 'cust', without leveshifter 'free'
 CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1',
 YOSYS_GHDL_FLAG = '' # ' -m ghdl ' 
-available_BRAM = 60
-freq_max = 10000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
+available_BRAM = 30  # 40k BRAMs
+freq_max = 20000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
 cust_gpio_direction_pins = 0x17F0
 cust_gpio_direction = 0x1710
 cust_gpio_write = 0x0210

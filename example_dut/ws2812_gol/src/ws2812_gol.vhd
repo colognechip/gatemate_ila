@@ -57,64 +57,64 @@ component CC_USR_RSTN is
 		USR_RSTN : out std_ulogic
 	);
 end component;
-component CC_PLL is
-	generic (
-		REF_CLK         : string;  -- reference input in MHz
-		OUT_CLK         : string;  -- pll output frequency in MHz
-		PERF_MD         : string;  -- LOWPOWER, ECONOMY, SPEED
-		LOW_JITTER      : integer; -- 0: disable, 1: enable low jitter mode
-		CI_FILTER_CONST : integer; -- optional CI filter constant
-		CP_FILTER_CONST : integer  -- optional CP filter constant
-	);
-	port (
-		CLK_REF             : in  std_ulogic;
-		USR_CLK_REF         : in  std_ulogic;
-		CLK_FEEDBACK        : in  std_ulogic;
-		USR_LOCKED_STDY_RST : in  std_ulogic;
-		USR_PLL_LOCKED_STDY : out std_ulogic;
-		USR_PLL_LOCKED      : out std_ulogic;
-		CLK0                : out std_ulogic;
-		CLK90               : out std_ulogic;
-		CLK180              : out std_ulogic;
-		CLK270              : out std_ulogic;
-		CLK_REF_OUT         : out std_ulogic
-	);
-	end component;
-
+--component CC_PLL is
+--	generic (
+--		REF_CLK         : string;  -- reference input in MHz
+--		OUT_CLK         : string;  -- pll output frequency in MHz
+--		PERF_MD         : string;  -- LOWPOWER, ECONOMY, SPEED
+--		LOW_JITTER      : integer; -- 0: disable, 1: enable low jitter mode
+--		CI_FILTER_CONST : integer; -- optional CI filter constant
+--		CP_FILTER_CONST : integer  -- optional CP filter constant
+--	);
+--	port (
+--		CLK_REF             : in  std_ulogic;
+--		USR_CLK_REF         : in  std_ulogic;
+--		CLK_FEEDBACK        : in  std_ulogic;
+--		USR_LOCKED_STDY_RST : in  std_ulogic;
+--		USR_PLL_LOCKED_STDY : out std_ulogic;
+--		USR_PLL_LOCKED      : out std_ulogic;
+--		CLK0                : out std_ulogic;
+--		CLK90               : out std_ulogic;
+--		CLK180              : out std_ulogic;
+--		CLK270              : out std_ulogic;
+--		CLK_REF_OUT         : out std_ulogic
+--	);
+--	end component;
+--
+--
+--
 signal CC_reset, reset_all, clk0 : std_ulogic;
-
 begin
-
-	ws2812_pll : CC_PLL
-	generic map (
-		REF_CLK         => "10.0",
-		OUT_CLK         => "10.0",
-		PERF_MD         => "ECONOMY",
-		LOW_JITTER      => 1,
-		CI_FILTER_CONST => 2,
-		CP_FILTER_CONST => 4
-	)
-	port map (
-		CLK_REF             => clk,
-		USR_CLK_REF         => '0',
-		CLK_FEEDBACK        => '0',
-		USR_LOCKED_STDY_RST => '0',
-		USR_PLL_LOCKED_STDY => open,
-		USR_PLL_LOCKED      => open,
-		CLK0                => clk0,
-		CLK90               => open,
-		CLK180              => open,
-		CLK270              => open,
-		CLK_REF_OUT         => open
-	);
-
+--
+--	ws2812_pll : CC_PLL
+--	generic map (
+--		REF_CLK         => "10.0",
+--		OUT_CLK         => "10.0",
+--		PERF_MD         => "ECONOMY",
+--		LOW_JITTER      => 1,
+--		CI_FILTER_CONST => 2,
+--		CP_FILTER_CONST => 4
+--	)
+--	port map (
+--		CLK_REF             => clk,
+--		USR_CLK_REF         => '0',
+--		CLK_FEEDBACK        => '0',
+--		USR_LOCKED_STDY_RST => '0',
+--		USR_PLL_LOCKED_STDY => open,
+--		USR_PLL_LOCKED      => open,
+--		CLK0                => clk0,
+--		CLK90               => open,
+--		CLK180              => open,
+--		CLK270              => open,
+--		CLK_REF_OUT         => open
+--	);
 	usr_rstn_inst: CC_USR_RSTN
 	port map (
 		USR_RSTN => CC_reset -- reset signal to CPE array
 	);
 
 	reset_all <= CC_reset AND reset;
-
+	clk0 <= clk;
 ram_to_bit : entity work.ram_to_bit
 	port map(
 		    reset => reset_all,

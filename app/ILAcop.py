@@ -17,8 +17,9 @@ Commands:
              -vhd SOURCE     Paths to the VHDL source code files.
              -t NAME         Top level entity of the design under test.
              -ccf SOURCE     Folder containing the .ccf file of the design under test. 
+             -s SPEED        Configure ILA for best performance. Max Sample Width = 40, the number of samples depends on the sample width. 
              -f MHz          Defines the external clock frequency in MHz (default is 10.0 MHz).
-             -sync LEVEL     Number of register levels via which the SUT are synchronised.
+             -sync LEVEL     Number of register levels via which the SUT are synchronised (default: 2)
              -d DELAY        ILA PLL Phase shift of sampling frequency. 0=0°, 1=90°, 2=180°, 3=270° (default: 2).
              -opt            Optimizes the design by deleting all unused signals before design evaluation.
           (optional) Subcommands config: 
@@ -80,11 +81,12 @@ def positive_int(value):
     return ivalue
 
 
-main_actions_config_parser.add_argument('-sync', dest='sync', type=positive_int, default=0, required=False,
+main_actions_config_parser.add_argument('-sync', dest='sync', type=positive_int, default=2, required=False,
                help='Determines the number of register levels via which the signals to be analysed are synchronised.')
-
 main_actions_config_parser.add_argument('-opt', dest='opt', action='store_true', default=False, required=False,
                help='This optimizes the design by deleting all unused signals before signal evaluation.')
+main_actions_config_parser.add_argument('-s', dest='speed', action='store_true', default=False, required=False,
+               help='Configure ILA for best performance.')
 
 main_actions_reconfig_parser_start = main_actions.add_parser(actions[2])
 main_actions_reconfig_parser_start.add_argument('-s', dest='swc', action='store_true', default=False, required=False,
@@ -154,6 +156,8 @@ if args.main_action == actions[0]: # config
     ILA_config_instance.set_ILA_clk_delay(args.delay)
     ILA_config_instance.set_ILA_opt(args.opt)
     ILA_config_instance.set_sync_level(args.sync)
+    ILA_config_instance.set_speed(args.speed)
+
     # finding all Verilog files
     if args.verilog_source:
         ILA_config_instance.set_verilog(args.verilog_source)
@@ -165,8 +169,13 @@ if args.main_action == actions[0]: # config
     if args.ccf:
         ccf_found = ILA_config_instance.set_DUT_ccf(args.ccf)
     else:
-        ccf_found = ILA_config_instance.set_DUT_ccf(sources[0])
+        ccf_found = False
+        for source in sources:
+            ccf_found = ILA_config_instance.set_DUT_ccf(source)
+            if ccf_found:
+                break
     if not ccf_found:
+        print("Error! No .ccf file was found!" + os.linesep)
         exit()
     if not ILA_config_instance.flat_DUT(args.work_dir):
         exit()
@@ -268,10 +277,11 @@ if config_FPGA:
         exit()
 
 ILA_user = RuntimeInteractionManager(int(float(ILA_config_instance.ILA_sampling_freq_MHz) * 1000000),
-                                     ILA_config_instance.samples_count_before_trigger,
-                                     (2**ILA_config_instance.bits_samples_count) - ILA_config_instance.samples_count_before_trigger,
+                                     ILA_config_instance.FIFO_SMP_CNT_before,
+                                     ILA_config_instance.sample_count - ILA_config_instance.FIFO_SMP_CNT_before,
                ILA_config_instance.get_Signals_run(), ILA_config_instance.SUT_top_name, ILA_config_instance.sample_compare_pattern,
-                                     ILA_config_instance.bram_single_wide, ILA_config_instance.bram_matrix_wide,
-                                     ILA_config_instance.use_reset_fuction)
+                                     ILA_config_instance.FIFO_IN_SIZE, ILA_config_instance.FIFO_MATRIX_size,
+                                     ILA_config_instance.use_reset_fuction, ILA_config_instance.input_ctrl_size,
+                                     ILA_config_instance.input_ctrl_signal_name, ILA_config_instance.FIFO_MATRIX_DEPH)
 ILA_user.run()
 
