@@ -18,6 +18,7 @@ module FIFO_cascading_DEPH #(
 );
 
 wire [WIDTH-1:0] BRAM_do_tmp [DEPH-1:0];
+reg [WIDTH-1:0] BRAM_di_tmp [DEPH-1:0];
 wire [DEPH-1:0] EMPTY, PUSH, POP, FULL, ALMOST_FULL, ALMOST_EMPTY;
 
 wire [DEPH-1:0] enable_read;
@@ -181,8 +182,14 @@ generate
     end
 
     for (i = 0; i < DEPH; i = i+1) begin : loop_init
+        always @(posedge rclk) begin
+            if(!rst) begin
+                BRAM_di_tmp[i] <= 0;
+            end else begin
+                BRAM_di_tmp[i] <= DI;
+            end
+        end
         CC_FIFO_40K #(
-        
         .ALMOST_FULL_OFFSET(15'h1),
         .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET),
         .DYN_STAT_SELECT(0), 
@@ -201,7 +208,7 @@ generate
         .A_EN(POP[i]),
         .B_EN(PUSH[i]),
         .B_WE(1'b1),
-        .B_DI(DI),
+        .B_DI(BRAM_di_tmp[i]),
         .B_BM(MASK),
         .A_DO(BRAM_do_tmp[i]),
         .F_ALMOST_FULL_OFFSET(),

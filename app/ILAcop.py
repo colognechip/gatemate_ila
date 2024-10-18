@@ -81,7 +81,7 @@ def positive_int(value):
     return ivalue
 
 
-main_actions_config_parser.add_argument('-sync', dest='sync', type=positive_int, default=2, required=False,
+main_actions_config_parser.add_argument('-sync', dest='sync', type=positive_int, default=1, required=False,
                help='Determines the number of register levels via which the signals to be analysed are synchronised.')
 main_actions_config_parser.add_argument('-opt', dest='opt', action='store_true', default=False, required=False,
                help='This optimizes the design by deleting all unused signals before signal evaluation.')
