@@ -43,9 +43,12 @@ module ila_top#(
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~Signals~start__
-input clk,
-output [7:0] led,
+// __Place~for~Signals~start__
+
+input clk,
+
+output [7:0] led,
+
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -65,11 +68,16 @@ wire ILA_clk_src;
 
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~SUT~start__
-reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;
-wire [INPUT_CTRL_size-1:0] led_ctrl_DUT_ILA_34;
-assign led_ctrl_DUT_ILA_34 = input_ctrl_DUT;
-blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .led_ctrl(led_ctrl_DUT_ILA_34), .ila_sample_dut(sample));
+// __Place~for~SUT~start__
+
+reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;
+
+wire [INPUT_CTRL_size-1:0] led_ctrl_DUT_ILA_34;
+
+assign led_ctrl_DUT_ILA_34 = input_ctrl_DUT;
+
+blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .led_ctrl(led_ctrl_DUT_ILA_34), .ila_sample_dut(sample));
+
 // __Place~for~SUT~ends__
 // #################################################################################################
 //blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
@@ -313,7 +321,7 @@ always @(posedge i_sclk_ILA_2) begin
         trigger_row <= 0;
     end
     else if (conf_trigger_1) begin
-        trigger_row <= {spi_nib_receive, 2'b00};
+        trigger_row[5:2] <= spi_nib_receive;
     end else if (conf_trigger_2) begin
         trigger_row[1:0] <= spi_nib_receive[3:2];
     end
