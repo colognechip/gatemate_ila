@@ -277,7 +277,7 @@ class Communication:
         for seq, trig in enumerate(trigger):
             if trig["pattern_msg"] is not None:
                 self.send_msg(trig["pattern_msg"])
-            send_msg_m = list(trig["trigger"]) + [trig["activation"]]
+            send_msg_m = [0b00000000] + list(trig["trigger"]) + [trig["activation"]]
             self.send_msg(list(send_msg_m))
             start_time = time.perf_counter()
             while 1:

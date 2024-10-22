@@ -202,7 +202,6 @@ class RuntimeInteractionManager:
                     self.change_trigger_config()
                 elif option == 2:
                     self.get_signals()
-                    self.com.send_reset_ila()
                 elif option == 3:
                     self.com.send_reset_ila()
                     self.trigger_all = self.const_trigger_all

@@ -26,17 +26,17 @@
 module ila_top#(
     parameter USE_USR_RESET = 1, 
     parameter USE_PLL = 0,
-    parameter USE_FEATURE_PATTERN = 1,
-    parameter INPUT_CTRL_size = 4,
-    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'h3,
-    parameter FIFO_IN_WIDTH = 20,
-    parameter FIFO_MATRIX_WIDTH = 6,
-    parameter FIFO_MATRIX_DEPH = 5,
-    parameter sample_width = 108,
+    parameter USE_FEATURE_PATTERN = 0,
+    parameter INPUT_CTRL_size = 0,
+    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'hD,
+    parameter FIFO_IN_WIDTH = 40,
+    parameter FIFO_MATRIX_WIDTH = 9,
+    parameter FIFO_MATRIX_DEPH = 3,
+    parameter sample_width = 356,
     parameter external_clk_freq = "10.0",
     parameter sampling_freq_MHz = "100.0",
     parameter clk_delay = 2,
-    parameter SIGNAL_SYNCHRONISATION = 2
+    parameter SIGNAL_SYNCHRONISATION = 1
 )(
     (* clkbuf_inhibit *) input i_sclk_ILA, //
     input i_mosi_ILA,
@@ -70,13 +70,7 @@ wire ILA_clk_src;
 // # ********************************************************************************************* #
 // __Place~for~SUT~start__
 
-reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;
-
-wire [INPUT_CTRL_size-1:0] led_ctrl_DUT_ILA_34;
-
-assign led_ctrl_DUT_ILA_34 = input_ctrl_DUT;
-
-blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .led_ctrl(led_ctrl_DUT_ILA_34), .ila_sample_dut(sample));
+blink_4 DUT (.ILA_rst(reset_DUT), .ila_clk_src(ILA_clk_src), .clk(clk), .led(led), .ila_sample_dut(sample));
 
 // __Place~for~SUT~ends__
 // #################################################################################################
@@ -339,13 +333,40 @@ always @(posedge i_sclk_ILA_2) begin
     end
 end
 
+reg trigger_active_start;
+
 always @(posedge i_sclk_ILA_2) begin
     if (!ila_reset_register_sclk) begin
         trigger_activation <= 0;
-        trigger_active_hold <= 0;
+        trigger_active_start <= 0;
+    end
+    else if (trigger_active_hold) begin
+        trigger_active_start <= 0;
     end
     else if (conf_trigger_4) begin
         trigger_activation <= spi_nib_receive[1:0];
+        trigger_active_start <= 1;
+    end
+    
+end
+
+reg [1:0] trigger_start_cnt;
+
+// counter 
+always @(posedge i_sclk_ILA_2) begin
+    if (!ila_reset_register_sclk ) begin
+        trigger_start_cnt <= 0;
+    end
+    else if (trigger_active_start ) begin
+        trigger_start_cnt <= trigger_start_cnt + 1;
+    end
+end
+
+always @(posedge i_sclk_ILA_2) begin
+    if (!ila_reset_register_sclk ) begin
+        trigger_active_hold <= 0;
+    end
+    else if (trigger_start_cnt == 2'b11) begin
         trigger_active_hold <= 1;
     end
 end
