@@ -181,7 +181,7 @@ class RuntimeInteractionManager:
                 exit()
 
     def run(self):
-        print(print_note(["Trigger at sample no.: " + str(self.count_samples[0]-2),
+        print(print_note(["Trigger at sample no.: " + str(self.count_samples[0]-3),
                                 "Defined analysis frequency: " + str(self.analysis_frequency) + " Hz"]))
         while True:
             try:
@@ -192,7 +192,6 @@ class RuntimeInteractionManager:
                     option = int(input_entered)
                 except Exception as exception:
                     print(os.linesep + "wrong Input!")
-                    #print(exception)
                     traceback.print_exc()
                     continue
                 if option == 0:
@@ -562,9 +561,6 @@ class RuntimeInteractionManager:
                 #start_test = True
                 #signal_alt = 0
                 for sample_counter in range(len(samp_arr)):  # go through all samples
-                    #if sample_counter == (durchgang*stufen):
-                    #    durchgang+=1
-                    #    continue
                     bit_counter = 0
                     for signal_name_index in range(len(self.signal_names)):  # go through all defined signals and vectors
                         self.signal_names[signal_name_index][2] = ""

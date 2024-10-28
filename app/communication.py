@@ -96,11 +96,11 @@ class Communication:
                     spi = SpiController()
 
                     spi.configure(CON_LINK, turbo=True)  # , turbo=True
-                    if frequency >= freq_max:
+                    if (frequency//2) >= freq_max:
                         self.port = spi.get_port(cs=0, freq=freq_max, mode=0)
                     # print("feq set to: " + str(freq_max))
                     else:
-                        self.port = spi.get_port(cs=0, freq=frequency, mode=0)
+                        self.port = spi.get_port(cs=0, freq=frequency//2, mode=0)
                         # print("feq set to: " + str(frequency))
                     self.max_payload = spi.PAYLOAD_MAX_LENGTH
                     self.gpio = spi.get_gpio()
@@ -135,7 +135,7 @@ class Communication:
             if CON_DEVICE == 'oli':
                 self.toggle_clk(1, 0, 8)
                 self.toggle_clk(0, 0, 8)
-            msg = bytearray([0b01100110])
+            msg = bytearray([0b01100000, 0b00000000])
             ret = self.send_msg(msg)
             if self.check_msg(msg[0], ret[0]):
                 break
@@ -268,8 +268,6 @@ class Communication:
     #
 
     def read_spi(self, trigger):
-        self.send_reset_ila()
-        received = self.send_msg([0b00000000]+[0b00000000])
         t = ThreadWithReturnValue(target=interrupt_input)
         t.start()
         print(print_note(["Waiting for device. Press Enter to interrupt."],
@@ -279,8 +277,10 @@ class Communication:
         for seq, trig in enumerate(trigger):
             if trig["pattern_msg"] is not None:
                 self.send_msg(trig["pattern_msg"])
-            send_msg_m = [0b00000000] + list(trig["trigger"]) + [trig["activation"]] + [0b00000000]
-            self.send_msg(list(send_msg_m))
+
+
+            send_msg_m = [0b00000000, 0b01100000, 0b00000000, 0b00000000] + list(trig["trigger"]) + [trig["activation"]] + [0b00000000]
+            self.send_msg(send_msg_m)
             start_time = time.perf_counter()
             while 1:
                 received = self.send_msg([0b00000000])
@@ -299,7 +299,7 @@ class Communication:
                 elif not t.is_alive():
                     print(print_note(["Stopped by sequence number: " + str(seq)], "user capture stop"))
                     return answer_all, t
-            self.send_reset_ila()
+            self.send_msg([0b00000000, 0b01100000, 0b00000000, 0b00000000])
         output_time = ["Duration between start and first trigger: " + str(round(times_mess[0], 6)) + " s"]
         times_mess.pop(0)
         for times_m in times_mess:

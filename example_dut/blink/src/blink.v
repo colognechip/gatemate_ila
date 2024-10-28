@@ -28,7 +28,7 @@ reg [24:0] counter;
 		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out)
 	);
 
-	assign led[6:0] = counter[24:21];
+	assign led[6:0] = counter[24:18];
 	assign led[7] = LED_ctrl;
 
 	always @(posedge clk0)

@@ -32,8 +32,10 @@ module bram_control#(
     parameter sample_width = 20
 )(
     input i_clk_ILA,
-    input i_sclk,
-    input i_reset,
+    (* clkbuf_inhibit *) input i_sclk,
+    input i_reset_clk,
+    input i_reset_sclk,
+    input trigger_active,
     input i_read_active,
     input [(sample_width-1):0] i_sample,
     input i_slave_end_byte_post_edge,
@@ -46,14 +48,22 @@ module bram_control#(
 
 parameter rest = ((FIFO_IN_WIDTH*FIFO_MATRIX_WIDTH) - sample_width);
 wire [((FIFO_IN_WIDTH*FIFO_MATRIX_WIDTH)-1):0] FIFO_DI, FIFO_DO;
-wire [(sample_width-1):0] o_sample;
+reg [(sample_width-1):0] o_sample;
 
-wire rd_nxt, FIFO_FULL, FIFO_ALMOST_EMPTY, FIFO_EMPTY, FIFO_POP;
+wire rd_nxt, FIFO_FULL, FIFO_ALMOST_EMPTY, FIFO_EMPTY;
+reg FIFO_POP;
 reg write_done;
-wire FIFO_clk;
-assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
+//(* clkbuf_inhibit *) wire FIFO_clk;
+// assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
 
-assign o_sample = FIFO_DO[(sample_width-1):0];
+always  @(posedge i_sclk) begin
+    if (!i_reset_sclk) begin 
+        o_sample <= 0;
+    end
+    else if(trigger_active) begin
+        o_sample <= FIFO_DO[(sample_width-1):0];
+    end
+end
 
 
 wire [(sample_width-1):0] DI_wire;
@@ -62,7 +72,7 @@ generate
         genvar i;
         reg [(sample_width-1):0] sync_DI [(SIGNAL_SYNCHRONISATION-1):0];
         always @(negedge i_clk_ILA) begin 
-            if (!i_reset) begin
+            if (!i_reset_clk) begin
                 sync_DI[0] <= 0;
             end else begin  
                 sync_DI[0] <= i_sample;
@@ -70,7 +80,7 @@ generate
         end
         for (i = 1; i < SIGNAL_SYNCHRONISATION; i = i+1) begin : loop
             always @(negedge i_clk_ILA) begin
-                if (!i_reset) begin
+                if (!i_reset_clk) begin
                     sync_DI[i] <= 0;
                 end else begin   
                     sync_DI[i] <= sync_DI[i-1];
@@ -82,6 +92,7 @@ generate
         assign DI_wire = i_sample;
     end
 endgenerate
+reg FIFO_PUSH;
         assign FIFO_DI = {{rest{1'b0}}, DI_wire};
 FIFO_cascading_WIDTH #(
     .WIDTH(FIFO_IN_WIDTH),
@@ -89,10 +100,10 @@ FIFO_cascading_WIDTH #(
     .DEPH(FIFO_MATRIX_DEPH),
     .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET)
 ) FIFO_cas (
-    .rclk(FIFO_clk),
-    .wclk(FIFO_clk),
-    .rst(i_reset),
-    .PUSH_i(!write_done),
+    .rclk(i_clk_ILA),
+    .wclk(i_clk_ILA),
+    .rst(i_reset_clk),
+    .PUSH_i(FIFO_PUSH),
     .POP_i(FIFO_POP),
     .DI(FIFO_DI),
     .DO(FIFO_DO),
@@ -106,14 +117,81 @@ FIFO_cascading_WIDTH #(
 );
 
 always  @(posedge i_clk_ILA) begin
-    if (!i_reset) begin 
+    if (!i_reset_clk) begin 
+        FIFO_PUSH <= 0;
+    end
+    else if(trigger_active) begin
+        FIFO_PUSH <= !write_done;
+    end
+end
+
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin 
         write_done <= 0;
     end
     else if(FIFO_FULL) begin
         write_done <= 1;
     end
 end
-assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
+
+reg [1:0] rd_stable;
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin 
+        rd_stable <= 0;
+    end else begin
+        rd_stable <= {rd_stable[0], rd_nxt};
+    end
+end
+
+reg rd_stable_sig;
+
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin 
+        rd_stable_sig <= 0;
+    end else if(rd_stable == 2'b00) begin
+        rd_stable_sig <= 0;
+    end else if(rd_stable == 2'b11) begin
+        rd_stable_sig <= 1;
+    end
+end
+
+reg rd_nxt_old, rd_next_signal;
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin 
+        rd_nxt_old <= 0;
+        rd_next_signal <= 0;
+    end else begin
+        rd_nxt_old <= rd_stable_sig;
+        rd_next_signal <= rd_stable_sig & (!rd_nxt_old);
+    end
+end
+
+reg POP_active;
+
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin 
+        FIFO_POP <= 0;
+    end
+    else if(write_done) begin
+        FIFO_POP <= rd_next_signal;
+    end
+    else begin
+        FIFO_POP <= POP_active;
+    end
+end
+
+
+always  @(posedge i_clk_ILA) begin
+    if (!i_reset_clk | i_trigger_triggered) begin 
+        POP_active <= 0;
+    end
+    else begin
+        POP_active <= !FIFO_ALMOST_EMPTY;
+    end
+end
+
+
+//assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
 
 assign o_write_done = write_done;
 
@@ -121,7 +199,10 @@ assign o_write_done = write_done;
 
 generate
     if (sample_width > 4) begin 
-        smp_to_byte #(.sample_width(sample_width)) byte_from_smp (.i_clk_ILA(i_sclk), .i_read_active(i_read_active), 
+        smp_to_byte #(.sample_width(sample_width)) byte_from_smp (
+            .i_clk_ILA(i_sclk), 
+            .i_reset(i_reset_sclk),
+            .i_read_active(i_read_active), 
                                                         .i_ram_sample(o_sample),
                                                         .i_slave_end_byte_post_edge(i_slave_end_byte_post_edge),
                                                         .o_send_nib(o_send_nib), .o_rd(rd_nxt));
@@ -129,16 +210,21 @@ generate
     else begin
         reg [3:0] send_nib_sync;
         localparam rest_send_byte = 8 - sample_width;
+        reg rd_next_pipe_1, rd_next_pipe_2;
         always  @(posedge i_sclk) begin
-            if (!i_read_active) begin 
+            if (!i_reset_sclk) begin 
                 send_nib_sync <= 0;
+                rd_next_pipe_1 <= 0;
+                rd_next_pipe_2 <= 0;
             end
-            else begin
+            else if (i_read_active) begin
+                rd_next_pipe_1 <= i_slave_end_byte_post_edge;
+                rd_next_pipe_2 <= rd_next_pipe_1;
                 send_nib_sync <= {{rest_send_byte{1'b0}}, o_sample};
             end
         end
         assign o_send_nib = send_nib_sync;
-        assign rd_nxt = i_slave_end_byte_post_edge;
+        assign rd_nxt = i_slave_end_byte_post_edge | rd_next_pipe_1 | rd_next_pipe_2;
     end
 endgenerate
 
