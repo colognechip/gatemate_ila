@@ -120,7 +120,7 @@ generate
             end
         end
         CC_FIFO_40K #(
-        .ALMOST_FULL_OFFSET(15'h2),
+        .ALMOST_FULL_OFFSET(15'h3),
         .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET),
         .DYN_STAT_SELECT(0), 
         .A_WIDTH(WIDTH),

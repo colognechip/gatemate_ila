@@ -554,7 +554,8 @@ class RuntimeInteractionManager:
                 stufen = self.count_samples_total // self.FIFO_MATRIX_DEPH
                 if self.FIFO_MATRIX_DEPH > 1:
                     for x in range(1, self.FIFO_MATRIX_DEPH):
-                        del samp_arr[(x*stufen)-x+1]
+                        del samp_arr[(x*stufen)-((x-1)*2)+1]
+                        del samp_arr[(x*stufen)-((x-1)*2)]
 
 
                 #print("Attention test Mode ist aktivated")
