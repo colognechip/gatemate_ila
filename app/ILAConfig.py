@@ -94,16 +94,6 @@ def check_and_round_down_to_next_power_of_two(value):
         return 2 ** math.floor(math.log(value, 2))
 
 
-def sort_key(match):
-    if 'input' in match["Signal_type"]:
-        return 0
-    elif 'output' in match["Signal_type"]:
-        return 1
-    elif 'reg' in match["Signal_type"]:
-        return 2
-    elif 'wire' in match["Signal_type"]:
-        return 3
-
 
 def get_port_idx(request_string, len_ports):
     while True:
@@ -634,7 +624,7 @@ class ILAConfig:
     def search_DUT_signal(self, line):
         reset_signals = ["reset", "rst", "res"]
         clk_signals = ["clk", "clock"]
-        match_port = re.search(r'^\s*((?:input|output))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
+        match_port = re.search(r'^\s*((?:input|output|inout))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
         match_signal = re.search(r'^\s*((?:reg|wire))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
         if match_port:
             self.ports_DUT.append(string_to_dic(match_port))
