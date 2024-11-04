@@ -219,12 +219,12 @@ generate
             end
             else if (i_read_active) begin
                 rd_next_pipe_1 <= i_slave_end_byte_post_edge;
-                rd_next_pipe_2 <= rd_next_pipe_1;
+                rd_next_pipe_2 <= i_slave_end_byte_post_edge | rd_next_pipe_1;
                 send_nib_sync <= {{rest_send_byte{1'b0}}, o_sample};
             end
         end
         assign o_send_nib = send_nib_sync;
-        assign rd_nxt = i_slave_end_byte_post_edge | rd_next_pipe_1 | rd_next_pipe_2;
+        assign rd_nxt = rd_next_pipe_2;
     end
 endgenerate
 
