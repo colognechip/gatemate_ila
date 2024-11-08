@@ -488,8 +488,8 @@ class ILAConfig:
         function_pattern = r'^\s*function\s.*'
         function_end_pattern = r'^\s*endfunction\s.*'
         out_clk_pattern = re.compile(r"\s*\.OUT_CLK\(\"([^\"]*)\"\)")
-        clk_signals_pattern = re.compile(r"\s*\.(CLK0|CLK180|CLK270|CLK90)\((\w+)\)")
-        pll_name_pattern = re.compile(r"\)\s*(\w+)\s*\(")
+        clk_signals_pattern = re.compile(r"\s*\.(CLK0|CLK180|CLK270|CLK90)\(([^)]+)\)")
+        pll_name_pattern = re.compile(r"\)\s*([^)]+)\s*\(")
         mem_name_pattern = r"\s*(\w+(\.\w+)*)\s*\[.*?\]\s*=.*?;"
         reset_name = ""
         self.found_init_mem = []
@@ -1122,20 +1122,20 @@ class ILAConfig:
                         elif response != 'y':
                             self.use_reset_fuction = True
                             return response
-                        names = self.print_inputs_DUT()
-                        while True:
-                            in_state, usr_in = get_port_idx(
-                                os.linesep + "Choose a reset input: ",
-                                len(names))
-                            if not in_state:
-                                if response == 'p':
-                                    break
-                                elif response == 'e':
-                                    return response
-                            else:
-                                self.reset_name = names[usr_in]
-                                self.use_reset_fuction = True
+                    names = self.print_inputs_DUT()
+                    while True:
+                        in_state, usr_in = get_port_idx(
+                            os.linesep + "Choose a reset input: ",
+                            len(names))
+                        if not in_state:
+                            if usr_in == 'p':
+                                break
+                            elif usr_in == 'e':
                                 return usr_in
+                        else:
+                            self.reset_name = names[usr_in]
+                            self.use_reset_fuction = True
+                            return usr_in
                 elif selection == 2:
                     self.use_reset_fuction = False
                     self.use_cc_rst = False
