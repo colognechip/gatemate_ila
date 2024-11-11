@@ -13,24 +13,35 @@ architecture dut of ws2812_gol_tb is
 	constant CLKFRQ           : natural := 10_000_000;
 	constant clk_half_periode : time    := 0.5 sec / CLKFRQ;
 	-- component ports
+
+	constant gol_len_cnt : natural := 1;
+	constant gol_wd_cnt : natural := 1;
+
 	signal  reset_s            : std_ulogic;
 	signal clk_s              : std_ulogic;
-	signal ws2812_out_s, send_r, cnt_end       : std_ulogic;
+	signal ws2812_out_s : std_ulogic_vector((gol_len_cnt*gol_wd_cnt)-1 downto 0);
+	signal send_r, cnt_end       : std_ulogic;
 	signal spi_clk, mosi_r, miso_r, ss_r, spi_receive_byte, spi_periode	: std_ulogic;
 	signal led_w, send_byte, spy_rec_byte : std_ulogic_vector(7 downto 0);
   	 
+	signal stswi : std_ulogic_vector(15 downto 0) := "0000000000000111";
 
+	signal stled : std_ulogic_vector(15 downto 0);
 	begin  -- architecture dut
 	-- component instantiation
 	DUT : entity work.ws2812_gol
+	generic map(
+		sim => True,
+		gol_64_len_cnt => gol_len_cnt,
+		gol_64_wd_cnt => gol_wd_cnt
+	)
 	port map (
-		i_sclk => spi_clk,
-		i_ss => ss_r,
-		i_mosi => mosi_r,
-		o_miso => miso_r,
 		clk   => clk_s,
 		reset => reset_s,
-		ws2812_out => ws2812_out_s
+		ws2812_out => ws2812_out_s,
+		stswi => stswi,
+		stled => stled
+
 
 	);
 
@@ -61,42 +72,12 @@ architecture dut of ws2812_gol_tb is
 	wnr_start : process
 	begin
 		reset_s <= '0';
-		wait for 4 * clk_half_periode;
+		wait for 20 * clk_half_periode;
 		reset_s <= '1';
-		wait for 4 * clk_half_periode;
-		send_r <= '1';
-        spi_receive_byte <= '0';
-        send_byte <= "01010101"; 
-        wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "00011000";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "00111100";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "01000010";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "11000011";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "11000011";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "01000010";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "00111100";
-		wait on spi_periode;
-        wait on spi_periode;
-		send_byte <= "00011000";
-		wait on spi_periode;
-        wait on spi_periode;
-		wait on spi_periode;
-        wait on spi_periode;
-		send_r <= '0';
-        spi_receive_byte <= '0';
+		wait for 450000 * clk_half_periode;
+		reset_s <= '0';
+		wait for 200 * clk_half_periode;
+		reset_s <= '1';
 		wait;
 	end process wnr_start;
 	

@@ -1153,7 +1153,7 @@ class ILAConfig:
 
     def choose_analysed_signals(self, total_size=0):
         from config import available_BRAM
-        max_signals = (available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 20
+        max_signals = (available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 40
         if self.speed:
             max_signals = 40
 

@@ -36,6 +36,7 @@ entity gol is
     L       : out std_ulogic);
 end gol;
 
+
 architecture behv of gol is
   signal s, r, tmp, logik_1, logik_2, logik_3, logik_4, logik_5, logik_6, logik_7: std_logic;
 begin

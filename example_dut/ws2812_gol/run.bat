@@ -21,7 +21,7 @@ for /r ".\src\" %%f in (*.vhd) do (
 set LOG=0
 
 :: Place&Route arguments
-set PRFLAGS= +uCIO -ccf src/%TOP%.ccf 
+set PRFLAGS= +crf -ccf src/%TOP%.ccf 
 
 :: do not change
 if "%1"=="synth_vlog" (
