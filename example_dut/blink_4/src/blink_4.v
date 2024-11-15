@@ -16,7 +16,7 @@ module blink_4(
 
 assign led[7:4] = led_ctrl;
 
-reg [24:0] counter_1;
+(* ILA *) reg [24:0] counter_1;
 wire clk270_1, clk180_1, clk90_1, clk0_1, usr_ref_out_1;
 wire usr_pll_lock_stdy_1, usr_pll_lock_1;
 
@@ -48,7 +48,7 @@ wire usr_pll_lock_stdy_1, usr_pll_lock_1;
 
 	wire clk270_3, clk180_3, clk90_3, clk0_3, usr_ref_out_3;
 	reg [24:0] counter_2;
-wire clk270_2, clk180_2, clk90_2, clk0_2, usr_ref_out_2;
+	(* ILA *) wire clk270_2, clk180_2, clk90_2, clk0_2, usr_ref_out_2;
 wire usr_pll_lock_stdy_2, usr_pll_lock_2;
 
 	CC_PLL #(

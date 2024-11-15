@@ -41,7 +41,7 @@ entity gol_control is
 	ws2812_rgb_byte	: out std_ulogic_vector(7 downto 0);
 	ws2812_ram_addr_wr	: out std_ulogic_vector(7 downto 0);
 	ws2812_ready	: in std_ulogic;
-	ma_choise : out integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)-1);
+	ma_choise : out integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
 	stswi : in  std_ulogic_vector(15 downto 0);
 	next_gen_cnt_v : out  std_ulogic_vector(23 downto 0)  
 	);
@@ -52,7 +52,7 @@ architecture verhalten of gol_control is
 -- Nachbarn sind [x][y][z]
 -- 983:966, 957:940, 931:914, 905:888, 879:862, 853:836, 827:810, 801:784, 775:758, 749:732, 723:706, 697:680, 671:654, 645:628, 619:602, 593:576, 567:550, 541:524, 515:498, 489:472, 463:446, 437:420, 411:394, 385:368, 359:342, 333:316, 307:290, 281:264, 255:238, 229:212, 203:186, 177:160, 151:134, 125:108
 -- 612
-signal ma_choise_s : integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)-1);
+signal ma_choise_s : integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
 
 signal write_en_RAM_s, start_cnt : std_ulogic; 
 

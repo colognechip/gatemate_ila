@@ -144,25 +144,6 @@ def out_signal(signal):
         return signal["Signal_type"] + " " + signal["Signal_name"]
 
 
-def string_to_dic(signal):
-    last = str(signal.group(3))
-    sig_name = last.split('=')[0].strip()
-    mod_name = ""
-    if sig_name.startswith("\\"):
-        mod_names = sig_name.split(".")
-        sig_name = mod_names[-1]
-        del mod_names[-1]
-        for mod in mod_names:
-            mod_name += mod + "."
-
-    if signal.group(2) is not None:
-        return {"Signal_type": signal.group(1), "Signal_range": signal.group(2), "Signal_moduls": mod_name,
-                "Signal_name": sig_name,
-                "selected": []}
-    else:
-        return {"Signal_type": signal.group(1), "Signal_range": None, "Signal_moduls": mod_name,
-                "Signal_name": sig_name, "selected": []}
-
 
 def get_size_vec(ranges):
     el = list(map(int, ranges.split(':')))
@@ -170,6 +151,23 @@ def get_size_vec(ranges):
         return len(set(range(el[1], el[0] + 1)))
     else:
         return 1
+
+
+def load_from_json(file_name):
+    with open(file_name, 'r') as f:
+        data = json.load(f)
+    ila_config = ILAConfig()
+    ila_config.__dict__.update(data)
+    now = datetime.datetime.now()
+    ila_config.time_stamp = now.strftime("%y-%m-%d_%H-%M-%S")
+    ila_config.found_cc_rst = False
+    config_check = True
+    if ila_config.ILA_sampling_freq_MHz == "":
+        config_check = False
+        print("!ERROR! The value 'frequency' is not set")
+        print("The string represents the frequency in MHz at which the signals "
+              "under test are captured and is a string that contains only a decimal number.")
+    return ila_config, config_check
 
 
 class ILAConfig:
@@ -198,6 +196,7 @@ class ILAConfig:
     DUT_BRAMS_20k = 0
     DUT_BRAMS_40k = 0
     explanation_DUT_BRAMS = ""
+    total_size = 0
 
     def __init__(self):
         self.FIFO_SMP_CNT_before = None
@@ -271,6 +270,9 @@ class ILAConfig:
         self.use_reset_fuction = None
         self.explanation_SUT_ccf_file_source = "Folder containing the .ccf file"
         self.SUT_ccf_file_source = ""
+        self.total_size = 0
+        self.analyse_signal = False
+        self.ILA_signals_mark = []
 
     def save_to_json(self, file_name=None):
         if file_name is None:
@@ -291,26 +293,39 @@ class ILAConfig:
     def set_sync_level(self, sync_level):
         self.sync_level = sync_level
 
-
-    @staticmethod
-    def load_from_json(file_name):
-        with open(file_name, 'r') as f:
-            data = json.load(f)
-        ila_config = ILAConfig()
-        ila_config.__dict__.update(data)
-        now = datetime.datetime.now()
-        ila_config.time_stamp = now.strftime("%y-%m-%d_%H-%M-%S")
-        ila_config.found_cc_rst = False
-        config_check = True
-        if ila_config.ILA_sampling_freq_MHz == "":
-            config_check = False
-            print("!ERROR! The value 'frequency' is not set")
-            print("The string represents the frequency in MHz at which the signals "
-                  "under test are captured and is a string that contains only a decimal number.")
-        return ila_config, config_check
-
     def set_verilog(self, verilog_source):
         self.verilog_sources = verilog_source
+
+    def string_to_dic(self, signal):
+        last = str(signal.group(3))
+        sig_name = last.split('=')[0].strip()
+        mod_name = ""
+        analyse_arr = []
+        if self.analyse_signal:
+            self.ILA_signals_mark.append(sig_name)
+            if signal.group(2) is not None:
+                self.total_size += get_size_vec(signal.group(2).strip('[]'))
+            else:
+                self.total_size += 1
+            analyse_arr = ["A"]
+            self.analyse_signal = False
+
+        if sig_name.startswith("\\"):
+            mod_names = sig_name.split(".")
+            sig_name = mod_names[-1]
+            del mod_names[-1]
+            for mod in mod_names:
+                mod_name += mod + "."
+    
+        if signal.group(2) is not None:
+            return {"Signal_type": signal.group(1), "Signal_range": signal.group(2), "Signal_moduls": mod_name,
+                    "Signal_name": sig_name,
+                    "selected": analyse_arr}
+        else:
+            return {"Signal_type": signal.group(1), "Signal_range": None, "Signal_moduls": mod_name,
+                    "Signal_name": sig_name, "selected": analyse_arr}
+
+
 
     def get_yosys_cmd_verilog(self):
         if len(self.verilog_sources) > 0:
@@ -476,6 +491,7 @@ class ILAConfig:
 
         }
         clk_signal_names_array = []
+        self.ILA_signals_mark = []
         in_funktion = False
         in_initial_mem = False
         in_moduls_instance = False
@@ -483,6 +499,7 @@ class ILAConfig:
         inside_cc_pll = False
         out_clk_value = None
         pll_name = None
+        self.analyse_signal = False
         reset_pattern = r'^\s*CC_USR_RSTN\s.*'
         reset_pattern_signal = r"\s*\.USR_RSTN\((.*?)\)"
         function_pattern = r'^\s*function\s.*'
@@ -566,10 +583,14 @@ class ILAConfig:
                 elif "endmodule" == line.strip():
                     found_element["end"] = code_lines
                     self.SUT_signals = sorted(self.SUT_signals, key=lambda x: x["Signal_moduls"])
+                    if len(self.ILA_signals_mark) > 0:
+                        print(print_note(self.ILA_signals_mark, " ILA Signals from DUT "))
                     return found_element
 
-                elif config:
-                    self.search_DUT_signal(line)
+                else:
+                    self.search_DUT_port(line)
+                    if config:
+                        self.search_DUT_signal(line)
             elif re.match(function_end_pattern, line):
                 in_funktion = False
 
@@ -621,13 +642,12 @@ class ILAConfig:
                                     return None
 
 
-    def search_DUT_signal(self, line):
+    def search_DUT_port(self, line):
         reset_signals = ["reset", "rst", "res"]
         clk_signals = ["clk", "clock"]
         match_port = re.search(r'^\s*((?:input|output|inout))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
-        match_signal = re.search(r'^\s*((?:reg|wire))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
         if match_port:
-            self.ports_DUT.append(string_to_dic(match_port))
+            self.ports_DUT.append(self.string_to_dic(match_port))
             if "input" == self.ports_DUT[-1]["Signal_type"]:
                 if any(signal in (self.ports_DUT[-1]["Signal_name"]).lower() for signal in reset_signals) and (
                         self.reset_name is None):
@@ -638,10 +658,16 @@ class ILAConfig:
                     self.clk_name = self.ports_DUT[-1]["Signal_name"]
                     self.clk_name_global = self.ports_DUT[-1]["Signal_name"]
 
+    def search_DUT_signal(self, line):
+        match = re.search(r"\(\* ILA = 32'd1 \*\)", line)
+        if match:
+            self.analyse_signal = True              
+        match_signal = re.search(r'^\s*((?:reg|wire))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
         if match_signal:
             match_false = re.search(r'(_\d+_)|\[\d+:\d+\]', match_signal.group(3))
             if not match_false:
-                self.SUT_signals.append(string_to_dic(match_signal))
+                self.SUT_signals.append(self.string_to_dic(match_signal))
+        return 
 
     def print_inputs_DUT(self):
         word = ' Inputs DUT "' + self.SUT_top_name + '" '
@@ -716,7 +742,7 @@ class ILAConfig:
 
         return ""
 
-    def calk_RAM(self, total_size):
+    def calk_RAM(self):
         #
         # Cologne Chip FIFO
         #  32K x 1 bit
@@ -731,40 +757,40 @@ class ILAConfig:
         available_40k_BRAMs = available_BRAM - (math.ceil(self.DUT_BRAMS_20k / 2) + self.DUT_BRAMS_40k)
         max_BRAM_count = []
         min_BRAMs_deph = 6
-        if total_size == 1:
+        if self.total_size == 1:
             for i in range(min(available_40k_BRAMs, min_BRAMs_deph)):
                 value = (i + 1) * 32768
                 max_BRAM_count.append([value, 1, 1, (i + 1), 32768])
-        elif total_size == 2:
+        elif self.total_size == 2:
             for i in range(min(available_40k_BRAMs)):
                 value = (i + 1) * 16384
                 max_BRAM_count.append([value, 2, 1, (i + 1), 16384])
         else:
-            count_5_bit_width = math.ceil(total_size / 5)
+            count_5_bit_width = math.ceil(self.total_size / 5)
             if count_5_bit_width <= 5:
                 count_5_bit_deph = available_40k_BRAMs // count_5_bit_width
                 for i in range(min(count_5_bit_deph, min_BRAMs_deph)):
                     value = (i + 1) * 8192
                     max_BRAM_count.append([value, 5, count_5_bit_width, (i + 1), 8192])
-            if total_size > 5:
-                count_10_bit_width = math.ceil(total_size / 10)
+            if self.total_size > 5:
+                count_10_bit_width = math.ceil(self.total_size / 10)
                 if count_10_bit_width <= 5:
                     count_10_bit_deph = available_40k_BRAMs // count_10_bit_width
                     for i in range(min(count_10_bit_deph, min_BRAMs_deph)):
                         value = (i + 1) * 4096
                         if not is_value_present(value, max_BRAM_count):
                             max_BRAM_count.append([value, 10, count_10_bit_width, (i + 1), 4096])
-            if total_size > 15:
+            if self.total_size > 15:
                 # Einträge für 20-Bit Breite
-                count_20_bit_width = math.ceil(total_size / 20)
+                count_20_bit_width = math.ceil(self.total_size / 20)
                 count_20_bit_deph = available_40k_BRAMs // count_20_bit_width
-                if (total_size % 20) < 10:
+                if (self.total_size % 20) < 10:
                     for i in range(min(count_20_bit_deph, min_BRAMs_deph)):
                         value = (i + 1) * 2048
                         if not is_value_present(value, max_BRAM_count):
                             max_BRAM_count.append([value, 20, count_20_bit_width,(i + 1), 2048])
-            if total_size > 30:
-                count_40_bit_width = math.ceil(total_size / 40)
+            if self.total_size > 30:
+                count_40_bit_width = math.ceil(self.total_size / 40)
                 count_40_bit_deph = available_40k_BRAMs // count_40_bit_width
                 for i in range(min(count_40_bit_deph, min_BRAMs_deph)):
                     value = (i + 1) * 1024
@@ -775,7 +801,7 @@ class ILAConfig:
         return max_BRAM_count
 
 
-    def choose_Capture_time(self, total_size):
+    def choose_Capture_time(self):
         # Cologne Chip FIFO
         #  32K x 1 bit
         # • 16K x 2 bit
@@ -786,22 +812,22 @@ class ILAConfig:
         if self.speed:
             self.FIFO_MATRIX_DEPH =1
             self.FIFO_MATRIX_size = 1
-            if total_size == 1:
+            if self.total_size == 1:
                 self.sample_count = 32768
                 self.FIFO_IN_SIZE = 1
-            elif total_size == 2:
+            elif self.total_size == 2:
                 self.sample_count = 16384
                 self.FIFO_IN_SIZE = 2
-            elif total_size <= 5:
+            elif self.total_size <= 5:
                 self.sample_count = 8192
                 self.FIFO_IN_SIZE = 5
-            elif total_size <= 10:
+            elif self.total_size <= 10:
                 self.sample_count = 4096
                 self.FIFO_IN_SIZE = 10
-            elif total_size <= 20:
+            elif self.total_size <= 20:
                 self.sample_count = 2048
                 self.FIFO_IN_SIZE = 20
-            elif total_size <= 40:
+            elif self.total_size <= 40:
                 self.sample_count = 1024
                 self.FIFO_IN_SIZE = 40
             print(print_note(
@@ -810,7 +836,7 @@ class ILAConfig:
                 " Capture duration ", '#'))
             return self.choose_smp_before()[1]
 
-        all_configs = self.calk_RAM(total_size) # max_BRAM_count.append([samples_5_bit, value, 5, count_5_bit_width])
+        all_configs = self.calk_RAM() # max_BRAM_count.append([samples_5_bit, value, 5, count_5_bit_width])
         print(print_note(
             ["The capture duration must be defined.",
              "The maximum duration depends on:",
@@ -935,7 +961,6 @@ class ILAConfig:
         return user_input
 
     def user_config_loop(self, found_pll, found_reset):
-        total_size = 0
         print(print_note(["Now you will be guided through the configuration of the ILA.",
                           "Entering 'e' exits the process and generates a configurable",
                           "JSON file for the given DUT.",
@@ -955,13 +980,13 @@ class ILAConfig:
             if step == 1:
                 usr_in = self.choose_reset(found_reset)
             elif step == 2:
-                usr_in, total_size = self.choose_analysed_signals(total_size)
+                usr_in = self.choose_analysed_signals()
             elif step == 3:
-                usr_in = self.choose_Capture_time(total_size)
+                usr_in = self.choose_Capture_time()
             elif step == 4:
                 usr_in = self.choose_input_ctrl()
             elif step == 5:
-                if total_size > 4:
+                if self.total_size > 4:
                     usr_in = self.choose_pattern_compare()
                 else:
                     print(print_note(
@@ -1151,7 +1176,7 @@ class ILAConfig:
 
 
 
-    def choose_analysed_signals(self, total_size=0):
+    def choose_analysed_signals(self):
         from config import available_BRAM
         max_signals = (available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 40
         if self.speed:
@@ -1177,11 +1202,11 @@ class ILAConfig:
         insert_signal = False
         modul_choice = 0
 
-        while signal_choice != 0 or total_size == 0:
+        while signal_choice != 0 or self.total_size == 0:
             if not (module_filter or select_modul):
                 print()
                 self.print_all_signals()
-                print(print_note([str(total_size) + " (max. " + str(max_signals) + ")"],
+                print(print_note([str(self.total_size) + " (max. " + str(max_signals) + ")"],
                              " Number of selected bits to be analysed "))
             try:
                 if len(modul_names) > 1:
@@ -1190,7 +1215,7 @@ class ILAConfig:
                         if usr_in == 'f':
                             select_modul = True
                         elif usr_in in ['e', 'p']:
-                            return usr_in, total_size
+                            return usr_in
                         else:
                             signal_choice = int(usr_in)
                             if 0 < signal_choice <= len(self.SUT_signals):
@@ -1233,7 +1258,7 @@ class ILAConfig:
                         word = " " + modul_names[modul_choice] + " signals "
                         print_table(word, table)
                         print()
-                        print(print_note([str(total_size) + " (max. " + str(max_signals) + ")"],
+                        print(print_note([str(self.total_size) + " (max. " + str(max_signals) + ")"],
                                          " Number of selected bits to be analysed "))
                         usr_in = input("Select signals to be analyzed (0 = finish, f = no filter, c = change filter): ").lower()
                         if usr_in in ['f', 'p']:
@@ -1253,7 +1278,7 @@ class ILAConfig:
                 else:
                     usr_in = input("Select signals to be analyzed (0 = finish): ").lower()
                     if usr_in in ['e', 'p']:
-                            return usr_in, total_size
+                            return usr_in
                     else:
                         signal_choice = int(usr_in)
                         if 0 < signal_choice <= len(self.SUT_signals):
@@ -1264,30 +1289,30 @@ class ILAConfig:
                     if self.SUT_signals[signal_choice - 1]["Signal_range"] is None:
                         if len(self.SUT_signals[signal_choice - 1]["selected"]) > 0:
                             self.SUT_signals[signal_choice - 1]["selected"] = []
-                            total_size = total_size - 1
+                            self.total_size -=  1
                         else:
                             self.SUT_signals[signal_choice - 1]["selected"] = ["A"]
-                            total_size = total_size + 1
+                            self.total_size += 1
                     else:
                         if len(self.SUT_signals[signal_choice - 1]["selected"]) > 0:
                             if self.SUT_signals[signal_choice - 1]["selected"][0] == "A":
-                                total_size = total_size - get_size_vec(
+                                self.total_size -= get_size_vec(
                                     self.SUT_signals[signal_choice - 1]["Signal_range"].strip('[]'))
                             else:
                                 for ranges in self.SUT_signals[signal_choice - 1]["selected"]:
-                                    total_size = total_size - get_size_vec(ranges)
+                                    self.total_size -= get_size_vec(ranges)
                             self.SUT_signals[signal_choice - 1]["selected"] = []
                         else:
                             selected_one_back, size, ende = self.get_vector_signals(signal_choice)
                             if ende in ['e', 'p']:
-                                return ende, total_size
-                            total_size = total_size + size
+                                return ende
+                            self.total_size += size
                 elif signal_choice > len(self.SUT_signals) or signal_choice < 0:
                     print("Value out of range!")
-                elif signal_choice == 0 and total_size == 0:
+                elif signal_choice == 0 and self.total_size == 0:
                     print(os.linesep + "Warning! You must select at least one signal!")
 
-                if total_size > max_signals:
+                if self.total_size > max_signals:
                     print(print_note(["the number of bits within the sample exceeds the maximum number."],
                                      " Critical warning "))
 
@@ -1300,11 +1325,11 @@ class ILAConfig:
                      "Enter 'p' for 'previous' to backtrack a step."
                      ],
                     " Input ERROR ", '!'))
-        return "", total_size
+        return ""
 
     def create_DUT(self, code_lines, found_element):
         new_code_line = code_lines[:found_element["start"][0]]
-        sample_total_size, wire_string, all_name, config_note = self.get_analyse_Signals()
+        wire_string, all_name, config_note = self.get_analyse_Signals()
         print(print_note(config_note, " Signals under test ", '#'))
         module_instance = "module " + self.SUT_top_name + "("
         replacement_string = module_instance + "ila_sample_dut, "
@@ -1336,7 +1361,7 @@ class ILAConfig:
         code_lines[found_element["start"][0]] = code_lines[found_element["start"][0]].replace(module_instance, replacement_string)
         pointer = (found_element["start"][1] + 1)
         new_code_line += code_lines[found_element["start"][0]:pointer]
-        new_code_line += ["output [" + str(sample_total_size - 1) + ":0] ila_sample_dut;" + os.linesep] + import_ioput
+        new_code_line += ["output [" + str(self.total_size - 1) + ":0] ila_sample_dut;" + os.linesep] + import_ioput
 
         for mem_init in self.found_init_mem:
             mem_file_path = mem_init[2]["mem_file"] #.replace('\\', '\\\\')
@@ -1356,7 +1381,7 @@ class ILAConfig:
             for string in new_code_line:
                 file.write(string)
 
-        return sample_total_size
+        return
 
     def get_vector_signals(self, signal_choice):
         find_count = re.search(r"\[(\d+):(\d+)\]",
@@ -1424,7 +1449,6 @@ class ILAConfig:
         all_name = []
         wire_string = []
         config_note = []
-        sample_total_size = 0
         for index, signal in enumerate(self.SUT_signals):
             if len(signal["selected"]) > 0:
                 # rebuild Signal Name
@@ -1435,12 +1459,10 @@ class ILAConfig:
                 if signal["selected"][0] == "A":
                     all_name.append(new_name)
                     if signal["Signal_range"] is not None:
-                        sample_total_size += get_size_vec(signal["Signal_range"].strip('[]'))
                         wire_string += ["wire " + signal["Signal_range"] + " " + new_name + ";" + os.linesep,
                                         "assign " + new_name + " = " + rebuild_name + " ;" + os.linesep]
                         config_note.append(signal["Signal_range"] + " " + signal["Signal_name"])
                     else:
-                        sample_total_size += 1
                         wire_string += ["wire " + new_name + ";" + os.linesep +  "assign " + new_name + " = " + rebuild_name + " ;" + os.linesep]
                         config_note.append(signal["Signal_name"])
 
@@ -1452,17 +1474,14 @@ class ILAConfig:
                         signal_name_new = new_name + "_" + str(index_2)
                         all_name.append(signal_name_new)
                         size_range = get_size_vec(ranges)
-                        sample_total_size += size_range
-
                         if size_range > 1:
                             wire_string += ["wire " + "[" + str(size_range - 1) + ":0] " + signal_name_new + " ;" + os.linesep]
                         else:
                             wire_string += ["wire " + signal_name_new + " ;" + os.linesep]
 
                         wire_string += ["assign " + signal_name_new + " = " + new_name_signal + "[" + ranges + "] ;" + os.linesep]
-
                         config_note.append(" [" + ranges + "] " + signal["Signal_name"])
-        return sample_total_size, wire_string, all_name, config_note
+        return wire_string, all_name, config_note
 
     def get_Signals_run(self):
         all_signals = []
@@ -1481,6 +1500,21 @@ class ILAConfig:
                              get_size_vec(ranges)])
         all_signals.reverse()
         return all_signals
+
+    def cnt_signals(self):
+        self.total_size = 0
+        for signal in self.SUT_signals:
+            if len(signal["selected"]) > 0:
+                if signal["selected"][0] == "A":
+                    if signal["Signal_range"] is not None:
+                        self.total_size += get_size_vec(signal["Signal_range"].strip('[]'))
+                    else:
+                        self.total_size += 1
+                else:
+                    for ranges in signal["selected"]:
+                        self.total_size += get_size_vec(ranges)
+
+
 
     def set_config_ILA(self):
         start_comment_signals = "// __Place~for~Signals~start__"
@@ -1528,8 +1562,6 @@ class ILAConfig:
 
 
         instance_of_dut = instance_of_dut[:-2] + ", .ila_sample_dut(sample));"
-
-        sample_total_size = self.get_analyse_Signals()
         with open('..'+ os.path.sep +'src'+ os.path.sep +'ILA_top.v', "r") as file:
             content = file.read()
             content = content.replace(
@@ -1559,7 +1591,7 @@ class ILAConfig:
                 f"parameter FIFO_MATRIX_DEPH = {self.FIFO_MATRIX_DEPH}")
             content = content.replace(
                 re.search(r"parameter sample_width = \d+", content).group(),
-                f"parameter sample_width = {sample_total_size[0]}")
+                f"parameter sample_width = {self.total_size}")
             content = content.replace(
                 re.search(r'parameter external_clk_freq = "\d+.?\d+?"', content).group(),
                 f'parameter external_clk_freq = "{self.external_clk_freq}"')

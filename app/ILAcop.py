@@ -1,7 +1,7 @@
 import argparse, os, sys
 from argparse import RawTextHelpFormatter
 from RuntimeInteractionManager import RuntimeInteractionManager
-from ILAConfig import ILAConfig
+from ILAConfig import ILAConfig, load_from_json
 from pyftdi.ftdi import Ftdi
 from config import print_note
 
@@ -207,32 +207,31 @@ if args.main_action == actions[0]: # config
 
 elif args.main_action == actions[1]: # reconfig
     file_name = args.load
-    print(file_name)
     if file_name == None:
         with open("last_upload.txt", 'r') as file:
             content = file.read()
             if len(content) > 5:
                 file_name = content
-                ILA_config_instance, config_check = ILAConfig.load_from_json(content)
             else:
                 print("No configuration file was found for the ILA!")
     elif not os.path.exists(file_name):
         print("ERROR! No correct file was passed!")
         exit()
-    ILA_config_instance, config_check = ILAConfig.load_from_json(file_name)
+    ILA_config_instance, config_check = load_from_json(file_name)
     if not config_check:
         exit()
     if not ILA_config_instance.flat_DUT(args.work_dir):
         exit()
     code_lines = ILA_config_instance.get_DUT_flat_code()
     found_element = ILA_config_instance.parse_DUT(code_lines, False)
-    total_size = ILA_config_instance.create_DUT(code_lines, found_element)
-    if total_size == 0:
+    ILA_config_instance.cnt_signals()
+    ILA_config_instance.create_DUT(code_lines, found_element)
+    if ILA_config_instance.total_size == 0:
         print("!ERROR!")
-        if total_size == 0:
+        if ILA_config_instance.total_size == 0:
             print("You must select at least one signal for analysis in the JSON file.")
         exit()
-    usr_in = ILA_config_instance.choose_Capture_time(total_size)
+    usr_in = ILA_config_instance.choose_Capture_time()
     if usr_in in ['e', 'p']:
         exit()
     ILA_config_instance.set_config_ILA()
@@ -243,7 +242,7 @@ elif args.main_action == actions[2]: # start
         content = file.read()
         if len(content) > 5:
             file_name = content
-            ILA_config_instance, config_check = ILAConfig.load_from_json(content)
+            ILA_config_instance, config_check = load_from_json(file_name)
         else:
             print("No configuration file was found for the ILA!")
     if args.swc:

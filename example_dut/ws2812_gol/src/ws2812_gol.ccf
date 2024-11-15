@@ -13,21 +13,21 @@ Pin_out  "led[7]"                   Loc = "IO_EB_B8";                           
 
 Pin_out   "ws2812_out" Loc = "IO_NB_A0";
 
-Pin_out   "ws2812_out[0]" Loc = "IO_NB_A0" ;
-Pin_out   "ws2812_out[1]" Loc = "IO_NB_A1" ;
-Pin_out   "ws2812_out[2]" Loc = "IO_NB_A2" ; # 5
-Pin_out   "ws2812_out[3]" Loc = "IO_NB_A3";
-Pin_out   "ws2812_out[4]" Loc = "IO_NB_B0";
-Pin_out   "ws2812_out[5]" Loc = "IO_NB_A5";
-Pin_out   "ws2812_out[6]" Loc = "IO_NB_A4";
-Pin_out   "ws2812_out[7]" Loc = "IO_NB_B3";
-Pin_out   "ws2812_out[8]" Loc = "IO_NB_B2";
-Pin_out   "ws2812_out[9]" Loc = "IO_NB_B1";
-Pin_out   "ws2812_out[10]" Loc = "IO_NB_A6";
-Pin_out   "ws2812_out[11]" Loc = "IO_NB_A7";
-Pin_out   "ws2812_out[12]" Loc = "IO_NB_B4";
-Pin_out   "ws2812_out[13]" Loc = "IO_NB_B5";
-Pin_out   "ws2812_out[14]" Loc = "IO_NB_B6";
+#Pin_out   "ws2812_out[0]" Loc = "IO_NB_A0" ;
+#Pin_out   "ws2812_out[1]" Loc = "IO_NB_A1" ;
+#Pin_out   "ws2812_out[2]" Loc = "IO_NB_A2" ; # 5
+#Pin_out   "ws2812_out[3]" Loc = "IO_NB_A3";
+#Pin_out   "ws2812_out[4]" Loc = "IO_NB_B0";
+#Pin_out   "ws2812_out[5]" Loc = "IO_NB_A5";
+#Pin_out   "ws2812_out[6]" Loc = "IO_NB_A4";
+#Pin_out   "ws2812_out[7]" Loc = "IO_NB_B3";
+#Pin_out   "ws2812_out[8]" Loc = "IO_NB_B2";
+#Pin_out   "ws2812_out[9]" Loc = "IO_NB_B1";
+#Pin_out   "ws2812_out[10]" Loc = "IO_NB_A6";
+#Pin_out   "ws2812_out[11]" Loc = "IO_NB_A7";
+#Pin_out   "ws2812_out[12]" Loc = "IO_NB_B4";
+#Pin_out   "ws2812_out[13]" Loc = "IO_NB_B5";
+#Pin_out   "ws2812_out[14]" Loc = "IO_NB_B6";
 
 Pin_in  "stswi[0]"  Loc = "IO_SB_B0"| PULLDOWN=true;
 Pin_in  "stswi[1]"  Loc = "IO_SB_B1"| PULLDOWN=true;

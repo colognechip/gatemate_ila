@@ -25,7 +25,7 @@ port (
 end entity;
 
 architecture beh of ws2812_gol is
-signal ma_choise :	integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)-1);
+signal ma_choise :	integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
 
 TYPE STATE_NextGen_Type IS (IDLE, Data_to_WS2812, wait_for_finish); 
 SIGNAL state_nextGen   : STATE_NextGen_Type := IDLE;
