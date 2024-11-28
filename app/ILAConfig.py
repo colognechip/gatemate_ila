@@ -457,7 +457,7 @@ class ILAConfig:
              ],
             " Block RAM in use ", '#'))
         from config import available_BRAM
-        if (self.DUT_BRAMS_40k + (self.DUT_BRAMS_20k*2)) > available_BRAM:
+        if (self.DUT_BRAMS_40k + (self.DUT_BRAMS_20k//2)) > available_BRAM:
             print(print_note(
                 ["All available BRAMs are used by the DUT.  ",
                  "The gatemate_ila needs at least one free BRAM.",
@@ -1179,7 +1179,7 @@ class ILAConfig:
 
     def choose_analysed_signals(self):
         from config import available_BRAM
-        max_signals = (available_BRAM - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 40
+        max_signals = ((available_BRAM*2) - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 40
         if self.speed:
             max_signals = 40
 
