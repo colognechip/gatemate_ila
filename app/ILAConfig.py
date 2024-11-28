@@ -493,6 +493,7 @@ class ILAConfig:
         self.ILA_signals_mark = []
         in_funktion = False
         in_initial_mem = False
+        self.ports_DUT = []
         in_moduls_instance = False
         found_reset = False
         inside_cc_pll = False
@@ -1639,32 +1640,36 @@ class ILAConfig:
             file.write(content)
 
     def executing_toolchain(self):
-        from config import YOSYS, PR, PR_FLAGS, YOSYS_FLAGS
-        save_dir = os.getcwd()
-        save_gl_dir = os.path.dirname(save_dir)
-        files = get_files_with_extension('..'+ os.path.sep +'src', 'v') + get_files_with_extension('..'+ os.path.sep +'src'+ os.path.sep +'storage', 'v')
-        files.append(save_dir + os.path.sep +'config_design'+ os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v')
-        all_files = " ".join(files)
-        log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'yosys.log'
-        output_file_yosys = save_gl_dir + os.path.sep +'net'+ os.path.sep +'ila_top_synth' + self.time_stamp + '.v'
-        yosys_command = YOSYS + ' -l ' + log_file + ' -p "read -sv ' + all_files + \
-                        '; synth_gatemate -top ila_top ' + YOSYS_FLAGS + ' -vlog ' + output_file_yosys + '"'
-        print("Execute Synthesis..." + os.linesep + "Output permanently saved to: " + log_file)
-        if not execute_tool(yosys_command, output_file_yosys, log_file):
-            return False
-        output_file_p_r = save_gl_dir + os.path.sep +'p_r_out'+ os.path.sep +'ila_top_' + self.time_stamp
-        ccf_file_ila_source = get_files_with_extension('..'+ os.path.sep +'src', 'ccf')[0]
-        log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'impl.log'
-        p_r_command = PR + ' -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
-                      ccf_file_ila_source + '  > ' + log_file
-        time.sleep(3)
-        print(os.linesep + "Execute Implementation..." + os.linesep + "Output permanently saved to: " + log_file)
-        if not execute_tool(p_r_command, output_file_p_r + '_00.cfg', log_file):
-            return False
-        self.toolchain_info = output_file_p_r + '_00.cfg'
-        time.sleep(5)
+        try:
+            from config import YOSYS, PR, PR_FLAGS, YOSYS_FLAGS
+            save_dir = os.getcwd()
+            save_gl_dir = os.path.dirname(save_dir)
+            files = get_files_with_extension('..'+ os.path.sep +'src', 'v') + get_files_with_extension('..'+ os.path.sep +'src'+ os.path.sep +'storage', 'v')
+            files.append(save_dir + os.path.sep +'config_design'+ os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v')
+            all_files = " ".join(files)
+            log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'yosys.log'
+            output_file_yosys = save_gl_dir + os.path.sep +'net'+ os.path.sep +'ila_top_synth' + self.time_stamp + '.v'
+            yosys_command = YOSYS + ' -l ' + log_file + ' -p "read -sv ' + all_files + \
+                            '; synth_gatemate -top ila_top ' + YOSYS_FLAGS + ' -vlog ' + output_file_yosys + '"'
+            print("Execute Synthesis..." + os.linesep + "Output permanently saved to: " + log_file)
+            if not execute_tool(yosys_command, output_file_yosys, log_file):
+                return False
+            output_file_p_r = save_gl_dir + os.path.sep +'p_r_out'+ os.path.sep +'ila_top_' + self.time_stamp
+            ccf_file_ila_source = get_files_with_extension('..'+ os.path.sep +'src', 'ccf')[0]
+            log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'impl.log'
+            p_r_command = PR + ' -i ' + output_file_yosys + ' -o ' + output_file_p_r + ' ' + PR_FLAGS + ' -ccf ' + \
+                          ccf_file_ila_source + '  > ' + log_file
+            time.sleep(3)
+            print(os.linesep + "Execute Implementation..." + os.linesep + "Output permanently saved to: " + log_file)
+            if not execute_tool(p_r_command, output_file_p_r + '_00.cfg', log_file):
+                return False
+            self.toolchain_info = output_file_p_r + '_00.cfg'
+            time.sleep(5)
 
-        return True
+            return True
+        except Exception as e:
+            traceback.print_exc()
+            return False
 
     def upload(self):
         save_dir = os.getcwd()

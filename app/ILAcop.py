@@ -257,6 +257,8 @@ if args.main_action != actions[2]:
         if args.main_action != actions[1]:
             file_name = ILA_config_instance.save_to_json()
             print(print_note(["An error has occurred.", "All configurations for the given DUT have been saved in the following JSON file: ", file_name], " Error ", "#"))
+            with open("last_upload.txt", 'w') as file:
+                file.write(file_name)
         else:
             print(print_note(["An error has occurred."], " Error ", "#"))
 
