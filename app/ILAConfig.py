@@ -457,14 +457,13 @@ class ILAConfig:
              ],
             " Block RAM in use ", '#'))
         from config import available_BRAM
-        if ((self.DUT_BRAMS_40k * 2) + self.DUT_BRAMS_20k) > available_BRAM:
+        if (self.DUT_BRAMS_40k + (self.DUT_BRAMS_20k*2)) > available_BRAM:
             print(print_note(
-                [" All available BRAMs are used by the DUT.  ",
+                ["All available BRAMs are used by the DUT.  ",
                  "The gatemate_ila needs at least one free BRAM.",
                  "The configuration is canceled. "
                  ],
                 " Warning ", '!'))
-            return False
         return True
 
     def get_DUT_flat_code(self):
@@ -797,7 +796,9 @@ class ILAConfig:
                     if not is_value_present(value, max_BRAM_count):
                         max_BRAM_count.append([value, 40, count_40_bit_width, (i + 1), 1024])
             max_BRAM_count.sort(key=lambda x: x[0])
-
+        if len(max_BRAM_count) == 0:
+            count_40_bit_width = math.ceil(self.total_size / 40)
+            max_BRAM_count.append([1024, 40, count_40_bit_width, 1, 1024])
         return max_BRAM_count
 
 
