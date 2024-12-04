@@ -14,8 +14,8 @@ module CC_FIFO_40K #(
     parameter DYN_STAT_SELECT = 1,          // Dynamische Steuerung für fast voll/leer
     parameter A_WIDTH = 20,                 // Breite Port A
     parameter B_WIDTH = 20,                 // Breite Port B
-   // parameter string FIFO_MODE = "ASYNC",    // FIFO-Modus (synchron)
-   // parameter string RAM_MODE = "TDP",      // RAM-Modus (Two-Port)
+    parameter FIFO_MODE = "ASYNC",    // FIFO-Modus (synchron)
+    parameter RAM_MODE = "TDP",      // RAM-Modus (Two-Port)
     parameter A_CLK_INV = 0,                // Invertierung für A-Clock
     parameter B_CLK_INV = 0,                // Invertierung für B-Clock
     parameter A_EN_INV = 0,                 // Invertierung für A-Enable
@@ -27,7 +27,7 @@ module CC_FIFO_40K #(
     parameter A_ECC_EN = 0,                 // Fehlerkorrektur für A
     parameter B_ECC_EN = 0                  // Fehlerkorrektur für B
   )(
-    input wire  A_CLK,                    // Clock für Pop
+    (* clkbuf_inhibit *) input wire  A_CLK,                    // Clock für Pop
     input wire B_CLK,
     input wire  A_EN,                     // Enable für Pop
     input wire  B_EN,                    // Enable für Push

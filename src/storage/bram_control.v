@@ -53,8 +53,8 @@ reg [(sample_width-1):0] o_sample;
 wire rd_nxt, FIFO_FULL, FIFO_ALMOST_EMPTY, FIFO_EMPTY;
 reg FIFO_POP;
 reg write_done;
-//(* clkbuf_inhibit *) wire FIFO_clk;
-// assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
+(* clkbuf_inhibit *) wire FIFO_clk;
+assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
 
 always  @(posedge i_sclk) begin
     if (!i_reset_sclk) begin 
@@ -93,14 +93,17 @@ generate
     end
 endgenerate
 reg FIFO_PUSH;
-        assign FIFO_DI = {{rest{1'b0}}, DI_wire};
+assign FIFO_DI = {{rest{1'b0}}, DI_wire};
+
+
+
 FIFO_cascading_WIDTH #(
     .WIDTH(FIFO_IN_WIDTH),
     .WIDTH_cnt(FIFO_MATRIX_WIDTH),
     .DEPH(FIFO_MATRIX_DEPH),
     .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET)
 ) FIFO_cas (
-    .rclk(i_clk_ILA),
+    .rclk(FIFO_clk),
     .wclk(i_clk_ILA),
     .rst(i_reset_clk),
     .PUSH_i(FIFO_PUSH),
@@ -134,64 +137,64 @@ always  @(posedge i_clk_ILA) begin
     end
 end
 
-reg [1:0] rd_stable;
-always  @(posedge i_clk_ILA) begin
-    if (!i_reset_clk) begin 
-        rd_stable <= 0;
-    end else begin
-        rd_stable <= {rd_stable[0], rd_nxt};
-    end
-end
-
-reg rd_stable_sig;
-
-always  @(posedge i_clk_ILA) begin
-    if (!i_reset_clk) begin 
-        rd_stable_sig <= 0;
-    end else if(rd_stable == 2'b00) begin
-        rd_stable_sig <= 0;
-    end else if(rd_stable == 2'b11) begin
-        rd_stable_sig <= 1;
-    end
-end
-
-reg rd_nxt_old, rd_next_signal;
-always  @(posedge i_clk_ILA) begin
-    if (!i_reset_clk) begin 
-        rd_nxt_old <= 0;
-        rd_next_signal <= 0;
-    end else begin
-        rd_nxt_old <= rd_stable_sig;
-        rd_next_signal <= rd_stable_sig & (!rd_nxt_old);
-    end
-end
+//reg [1:0] rd_stable;
+//always  @(posedge i_clk_ILA) begin
+//    if (!i_reset_clk) begin 
+//        rd_stable <= 0;
+//    end else begin
+//        rd_stable <= {rd_stable[0], rd_nxt};
+//    end
+//end
+//
+//reg rd_stable_sig;
+//
+//always  @(posedge i_clk_ILA) begin
+//    if (!i_reset_clk) begin 
+//        rd_stable_sig <= 0;
+//    end else if(rd_stable == 2'b00) begin
+//        rd_stable_sig <= 0;
+//    end else if(rd_stable == 2'b11) begin
+//        rd_stable_sig <= 1;
+//    end
+//end
+//
+//reg rd_nxt_old, rd_next_signal;
+//always  @(posedge i_clk_ILA) begin
+//    if (!i_reset_clk) begin 
+//        rd_nxt_old <= 0;
+//        rd_next_signal <= 0;
+//    end else begin
+//        rd_nxt_old <= rd_stable_sig;
+//        rd_next_signal <= rd_stable_sig & (!rd_nxt_old);
+//    end
+//end
 
 reg POP_active;
 
-always  @(posedge i_clk_ILA) begin
-    if (!i_reset_clk) begin 
-        FIFO_POP <= 0;
-    end
-    else if(write_done) begin
-        FIFO_POP <= rd_next_signal;
-    end
-    else begin
-        FIFO_POP <= POP_active;
-    end
-end
+//always  @(posedge i_clk_ILA) begin
+//    if (!i_reset_clk) begin 
+//        FIFO_POP <= 0;
+//    end
+//    else if(write_done) begin
+//        FIFO_POP <= rd_nxt;
+//    end
+//    else begin
+//        FIFO_POP <= POP_active;
+//    end
+//end
 
 
-always  @(posedge i_clk_ILA) begin
-    if (!i_reset_clk | i_trigger_triggered) begin 
-        POP_active <= 0;
-    end
-    else begin
-        POP_active <= !FIFO_ALMOST_EMPTY;
-    end
-end
+//always  @(posedge i_clk_ILA) begin
+//    if (!i_reset_clk | i_trigger_triggered) begin 
+//        POP_active <= 0;
+//    end
+//    else begin
+//        POP_active <= !FIFO_ALMOST_EMPTY;
+//    end
+//end
 
 
-//assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
+assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
 
 assign o_write_done = write_done;
 
@@ -210,21 +213,21 @@ generate
     else begin
         reg [3:0] send_nib_sync;
         localparam rest_send_byte = 8 - sample_width;
-        reg rd_next_pipe_1, rd_next_pipe_2;
-        always  @(posedge i_sclk) begin
-            if (!i_reset_sclk) begin 
-                send_nib_sync <= 0;
-                rd_next_pipe_1 <= 0;
-                rd_next_pipe_2 <= 0;
-            end
-            else if (i_read_active) begin
-                rd_next_pipe_1 <= i_slave_end_byte_post_edge;
-                rd_next_pipe_2 <= i_slave_end_byte_post_edge | rd_next_pipe_1;
-                send_nib_sync <= {{rest_send_byte{1'b0}}, o_sample};
-            end
-        end
-        assign o_send_nib = send_nib_sync;
-        assign rd_nxt = rd_next_pipe_2;
+        //reg rd_next_pipe_1, rd_next_pipe_2;
+        //always  @(posedge i_sclk) begin
+        //    if (!i_reset_sclk) begin 
+        //        send_nib_sync <= 0;
+        //        rd_next_pipe_1 <= 0;
+        //        rd_next_pipe_2 <= 0;
+        //    end
+        //    else if (i_read_active) begin
+        //        rd_next_pipe_1 <= i_slave_end_byte_post_edge;
+        //        rd_next_pipe_2 <= i_slave_end_byte_post_edge | rd_next_pipe_1;
+        //        send_nib_sync <= {{rest_send_byte{1'b0}}, o_sample};
+        //    end
+        //end
+        assign o_send_nib = {{rest_send_byte{1'b0}}, o_sample};
+        assign rd_nxt = i_slave_end_byte_post_edge;
     end
 endgenerate
 

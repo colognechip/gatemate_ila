@@ -45,33 +45,25 @@ reg [((packages_per_sample*4)-1):0] shift_reg;
 wire init_reg;
 
 reg [(shift_cnt_width-1):0] shift_counter;
-reg rd;
+
 // The data from the BRAM needs to be shifted
 always @(posedge i_clk_ILA) begin
-    if (!i_reset) begin
-        shift_reg <= 0;
-        rd <= 0;
-    end
-    else if (init_reg | (!i_read_active)) begin               
+    if (!i_reset | !i_read_active) begin
         shift_reg <= {{zero_padding_bits{1'b0}}, i_ram_sample};
-        rd <= 0;
+        o_rd <= 0;
     end
     else if (i_slave_end_byte_post_edge) begin
-        shift_reg <= {4'b0000, shift_reg[((packages_per_sample*4)-1):4]};
+        if (init_reg) begin               
+            shift_reg <= {{zero_padding_bits{1'b0}}, i_ram_sample};
+            o_rd <= 1;
+        end
+        else begin
+            shift_reg <= {4'b0000, shift_reg[((packages_per_sample*4)-1):4]};
+        end
     end
     else begin
-        rd <= 1;
-    end
-end
-always @(posedge i_clk_ILA) begin
-    if (!i_reset) begin
         o_rd <= 0;
     end
-    else if(init_reg) begin
-        o_rd <= 0;
-    end else if (shift_counter[0]) begin
-        o_rd <= 1;
-    end 
 end
 
 //assign o_rd = rd;
@@ -91,15 +83,7 @@ always @(posedge i_clk_ILA) begin
     end
 end
 
-assign init_reg = (shift_counter == (packages_per_sample-1) & i_slave_end_byte_post_edge);
-//always @(posedge i_clk_ILA) begin
-//    if (!i_read_active) begin
-//        rd <= 0;
-//    end else begin
-//        rd <= init_reg & i_read_active;
-//    end
-//end
-//assign o_rd = rd;
+assign init_reg = shift_counter == (packages_per_sample-1);
 
 
 always @(posedge i_clk_ILA) begin

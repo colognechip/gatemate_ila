@@ -4,7 +4,7 @@ module FIFO_cascading_DEPH #(
     parameter DEPH = 3,
     parameter [14:0] ALMOST_EMPTY_OFFSET = 15'hf
 )(
-    input wire rclk,
+    (* clkbuf_inhibit *) input wire rclk,
     input wire wclk,
     input wire rst,
     input wire PUSH_i,
@@ -125,7 +125,7 @@ generate
         .DYN_STAT_SELECT(0), 
         .A_WIDTH(WIDTH),
         .B_WIDTH(WIDTH),
-        .FIFO_MODE("SYNC"),
+        .FIFO_MODE("ASYNC"),
         .RAM_MODE("TDP"),
         .A_CLK_INV(0), .B_CLK_INV(0),
         .A_EN_INV(0), .B_EN_INV(0),
