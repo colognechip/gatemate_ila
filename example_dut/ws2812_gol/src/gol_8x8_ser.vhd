@@ -39,7 +39,15 @@ entity gol_8x8_ser is
         row_5 : in std_ulogic_vector(7 downto 0);
         row_6 : in std_ulogic_vector(7 downto 0);
         row_7 : in std_ulogic_vector(7 downto 0);
-        ser_out : out std_ulogic;
+        alter_0 : in std_ulogic_vector(7 downto 0);
+        alter_1 : in std_ulogic_vector(7 downto 0);
+        alter_2 : in std_ulogic_vector(7 downto 0);
+        alter_3 : in std_ulogic_vector(7 downto 0);
+        alter_4 : in std_ulogic_vector(7 downto 0);
+        alter_5 : in std_ulogic_vector(7 downto 0);
+        alter_6 : in std_ulogic_vector(7 downto 0);
+        alter_7 : in std_ulogic_vector(7 downto 0);
+        ser_out : out std_ulogic_vector(1 downto 0);
         write_en_s : in std_ulogic;
         rgb_color_2 : in std_ulogic;
         life_shift_cnt_7 : in std_ulogic;
@@ -52,8 +60,9 @@ architecture verhalten of gol_8x8_ser is
 
     type out_matrix_t is array (0 to 7) of std_ulogic_vector(7 downto 0); 
     signal life_out 				: out_matrix_t;
+    signal alt_out : out_matrix_t;
 
-signal shift_life_row	   : std_ulogic_vector (7 downto 0);
+signal shift_life_row, shift_alt_row	   : std_ulogic_vector (7 downto 0);
 
 
 
@@ -67,6 +76,14 @@ begin
     life_out(5) <= row_5;
     life_out(6) <= row_6;
     life_out(7) <= row_7;
+alt_out(0) <= alter_0;
+alt_out(1) <= alter_1;
+alt_out(2) <= alter_2;
+alt_out(3) <= alter_3;
+alt_out(4) <= alter_4;
+alt_out(5) <= alter_5;
+alt_out(6) <= alter_6;
+alt_out(7) <= alter_7;
      
 
 
@@ -76,11 +93,14 @@ begin
         if rising_edge(clk) then
             if reset = '0' or write_en_s = '0' then
                 shift_life_row <= life_out(counter_index);
+                shift_alt_row <= alt_out(counter_index);
             elsif rgb_color_2 = '1' then
                 if life_shift_cnt_7 = '1' then
                     shift_life_row <= life_out(counter_index);
+                    shift_alt_row <= alt_out(counter_index);
                 else
                     shift_life_row <=  shift_life_row(6 downto 0) & '0';
+                    shift_alt_row <= shift_alt_row(6 downto 0) & '0';
                 end if;
             end if;
         end if;
@@ -90,7 +110,8 @@ begin
 
         
 
-        ser_out <= shift_life_row(7);
+        ser_out(0) <= shift_life_row(7);
+        ser_out(1) <= shift_alt_row(7); 
 
         
 

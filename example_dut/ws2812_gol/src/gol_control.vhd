@@ -41,9 +41,9 @@ entity gol_control is
 	ws2812_rgb_byte	: out std_ulogic_vector(7 downto 0);
 	ws2812_ram_addr_wr	: out std_ulogic_vector(7 downto 0);
 	ws2812_ready	: in std_ulogic;
-	ma_choise : out integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
+	ma_choise : out integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)-1);
 	stswi : in  std_ulogic_vector(15 downto 0);
-	next_gen_cnt_v : out  std_ulogic_vector(23 downto 0)  
+	next_gen_cnt_v : out  std_ulogic_vector(11 downto 0)  
 	);
   end gol_control;
 
@@ -52,7 +52,7 @@ architecture verhalten of gol_control is
 -- Nachbarn sind [x][y][z]
 -- 983:966, 957:940, 931:914, 905:888, 879:862, 853:836, 827:810, 801:784, 775:758, 749:732, 723:706, 697:680, 671:654, 645:628, 619:602, 593:576, 567:550, 541:524, 515:498, 489:472, 463:446, 437:420, 411:394, 385:368, 359:342, 333:316, 307:290, 281:264, 255:238, 229:212, 203:186, 177:160, 151:134, 125:108
 -- 612
-signal ma_choise_s : integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
+signal ma_choise_s : integer range 0 to (gol_64_len_cnt*gol_64_wd_cnt);
 
 signal write_en_RAM_s, start_cnt : std_ulogic; 
 
@@ -63,7 +63,18 @@ signal neighbours_in  			: in_matrix_t;
 type out_matrix_t is array (0 to (gol_length+1)) of std_ulogic_vector((gol_width+1) downto 0); 
 signal life_out 				: out_matrix_t;
 
-signal write_RAM_gol_reg, ser_out : std_ulogic_vector(((gol_64_len_cnt * gol_64_wd_cnt)-1) downto 0);
+
+type out_matrix_stil_t is array (0 to (gol_length-1)) of std_ulogic_vector((gol_width-1) downto 0); 
+signal stil_out 				: out_matrix_stil_t;
+
+constant stil_out_con : std_ulogic_vector((gol_width-1) downto 0) := (others => '1');
+
+signal write_RAM_gol_reg : std_ulogic_vector(((gol_64_len_cnt * gol_64_wd_cnt)-1) downto 0);
+
+
+type ser_out_t is array (((gol_64_len_cnt * gol_64_wd_cnt)-1) downto 0 ) of std_ulogic_vector(1 downto 0);
+signal ser_out : ser_out_t;
+
 
 signal writeRam 	: std_ulogic := '0'; 
 
@@ -83,11 +94,13 @@ SIGNAL TL_GOL_STATE : TL_GOL_STATE_TYPE := gol_init_st;
 
 signal break_counter : unsigned(24 downto 0);
 
-signal next_gen_cnt : unsigned(23 downto 0);
+signal next_gen_cnt : unsigned(11 downto 0);
 
 type ram is array (0 to (gol_length-1)) of std_ulogic_vector((gol_width-1) downto 0);
 signal init_pattern : ram;
 
+signal all_stil : std_ulogic_vector((gol_length-1) downto 0);
+constant all_stil_con : std_ulogic_vector((gol_length-1) downto 0) := (others => '1');
 
 signal write_to_ram_ws28_12_done_hold : std_ulogic;
 signal life_shift_cnt : integer range 0 to 7; 
@@ -100,10 +113,55 @@ signal first_time : std_ulogic := '0';
 
 signal ws2812_ram_addr_wr_s : std_ulogic_vector(7 downto 0) := "00000000";
 
+signal all_stil_sig, all_stil_sig_wait_done, all_stil_hold : std_ulogic;
+signal stil_hold_reg : std_ulogic_vector(3 downto 0);
+signal stil_one : std_ulogic;
 
+signal end_cnt : std_ulogic;
 
 begin
 
+	gol_stil: for x in 0 to (gol_length-1) generate
+		gol_stil_proc : process (clk) is
+		begin
+		if rising_edge(clk) then
+			if reset = '0' or gol_init = '1'  then
+				all_stil(x) <= '0';
+			elsif stil_out(x) = stil_out_con then
+				all_stil(x) <= '1';
+			else
+				all_stil(x) <= '0';
+			end if;
+		end if;
+	end process;
+	end generate gol_stil;
+
+		gol_stil_all_proc : process (clk) is
+		begin
+		if rising_edge(clk) then
+			if reset = '0' or gol_init = '1'  then
+				all_stil_sig <= '0';
+			elsif all_stil = all_stil_con then
+				all_stil_sig <= '1';
+			else
+				all_stil_sig <= '0';
+			end if;
+		end if;
+	end process gol_stil_all_proc;
+
+
+	gol_stil_all_wait : process (clk) is
+	begin
+	if rising_edge(clk) then
+		if reset = '0' or gol_init = '1'  then
+			stil_hold_reg <= (others => '0');
+		elsif gol_next_gen = '1' then
+			stil_hold_reg <= stil_hold_reg(2 downto 0) & all_stil_sig;
+		end if;
+	end if;
+end process gol_stil_all_wait;
+
+all_stil_sig_wait_done <= stil_hold_reg(3);
 	
 gol_row: for x in 0 to (gol_length-1) generate
    gol_column: for y in 0 to (gol_width-1) generate
@@ -115,7 +173,8 @@ gol_row: for x in 0 to (gol_length-1) generate
         nextGen => gol_next_gen,
         CPUin   => init_pattern(x)(y), 
         L       => life_out(x+1)(y+1),
-        reset   => reset
+        reset   => reset,
+		stil => stil_out(x)(y)
     );
 	neighbours_in(x)(y)(0) <= life_out((x+1)-1)((y+1)-1);	
     neighbours_in(x)(y)(1) <= life_out((x+1)-1)((y+1));	    
@@ -156,6 +215,9 @@ yIndexNachbarn: for y in 0 to gol_length generate
 		life_out((gol_length+1)-y)(0) 			<= '0';--Nachbarn((2*(gol_width+1))+(gol_length+1)+y);
 	end generate;
 
+	
+	end_cnt <= '1' when next_gen_cnt = "000111111111" else '0';
+
 
 
 	next_gen_cnt_v <= std_ulogic_vector(next_gen_cnt);
@@ -173,6 +235,7 @@ state_maschine : process (clk) is
 				case TL_GOL_STATE IS
 					when gol_init_st => 
 						gol_init <= '1';
+						gol_next_gen <= '0';
 						TL_GOL_STATE <= gol_init_done;
 					when gol_init_done =>
 						gol_init <= '0';
@@ -190,13 +253,19 @@ state_maschine : process (clk) is
 							TL_GOL_STATE <= next_gen;
 						end if; 
 					when next_gen =>
-						gol_next_gen <= '1';
-						next_gen_cnt <= next_gen_cnt +1; 
 						break_counter <= (others => '0');
-						TL_GOL_STATE <= next_gen_done;
+						if all_stil_sig_wait_done = '1' or end_cnt = '1' then
+							TL_GOL_STATE <= gol_init_st;
+							next_gen_cnt <= (others => '0');
+						else
+							next_gen_cnt <= next_gen_cnt +1;
+							TL_GOL_STATE <= next_gen_done;
+							gol_next_gen <= '1';
+						end if;
 					when next_gen_done =>
 						gol_next_gen <= '0';
-						TL_GOL_STATE <= wait_write;
+						TL_GOL_STATE <= wait_write; 
+
 				end case;
 			end if;
 	end if;
@@ -224,11 +293,11 @@ begin
 if rising_edge(clk) then
 	if (reset = '0') then
 		if (first_time = '0') then
-			init_pattern(0) <= "00000001"; --"0000000000000000000000000000000000000001";
+			init_pattern(0) <= "10001001"; -- 00000000000000000000000000000001";
 			first_time <= '1';
 		end if;
 	else
-		-- init_pattern(0) <= (init_pattern(0)((gol_width-2) downto 0) & (init_pattern(gol_length-1)(gol_width-1) xor init_pattern(gol_length-1)(gol_width-8) xor init_pattern(gol_length-1)(gol_width-15) xor init_pattern(gol_length-1)(gol_width-21)));
+		--init_pattern(0) <= (init_pattern(0)((gol_width-2) downto 0) & (init_pattern(gol_length-1)(gol_width-1) xor init_pattern(gol_length-1)(gol_width-8) xor init_pattern(gol_length-1)(gol_width-15) xor init_pattern(gol_length-1)(gol_width-21)));
 		-- 64: 63,63, 61, 60 -> 
 		init_pattern(0) <= (init_pattern(0)((gol_width-2) downto 0) & (init_pattern(gol_length-1)(gol_width-1) xor init_pattern(gol_length-1)(gol_width-2) xor init_pattern(gol_length-1)(gol_width-4) xor init_pattern(gol_length-1)(gol_width-5) ));  
 	end if;
@@ -370,6 +439,14 @@ xMaIndex: for x in 0 to (gol_64_wd_cnt-1) generate -- gol_64_len_cnt + gol_64_wd
 			row_5	=> life_out((8*y)+6)((gol_width - (8*x)) downto ((gol_width-7) - (8*x))), 
 			row_6	=> life_out((8*y)+7)((gol_width - (8*x)) downto ((gol_width-7) - (8*x))), 
 			row_7	=> life_out((8*y)+8)((gol_width - (8*x)) downto ((gol_width-7) - (8*x))),
+			alter_0 => stil_out((8*y)+0)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_1 => stil_out((8*y)+1)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_2 => stil_out((8*y)+2)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_3 => stil_out((8*y)+3)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_4 => stil_out((8*y)+4)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_5 => stil_out((8*y)+5)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_6 => stil_out((8*y)+6)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
+			alter_7 => stil_out((8*y)+7)((gol_width - (8*x)-1) downto ((gol_width-8) - (8*x))),
 			ser_out => ser_out((y*gol_64_wd_cnt)+x),
 			write_en_s => write_RAM_gol_reg((y*gol_64_wd_cnt)+x),
 			rgb_color_2 => rgb_color_2,  
@@ -481,21 +558,28 @@ write_en_RAM <= write_en_RAM_s;
 			if reset = '0' or write_en_RAM_s = '0' then
 				ws2812_rgb_byte <= (others => '0');
 			else
-				if ser_out(ma_choise_s) = '1' then
+				if ser_out(ma_choise_s) = "01" then
 					case rgb_color is
 						when 0 => ws2812_rgb_byte <= "00011111";
 						when 1 => ws2812_rgb_byte <= "00000000";
 						when 2 => ws2812_rgb_byte <= "00000000";
 						when others => ws2812_rgb_byte <= "00000000";
 					end case;
-					else
+				elsif ser_out(ma_choise_s)(0) = '0' then
 					case rgb_color is
 						when 0 => ws2812_rgb_byte <= "00000000";
 						when 1 => ws2812_rgb_byte <= "00000000";
 						when 2 => ws2812_rgb_byte <= "00000001";
 						when others => ws2812_rgb_byte <= "00000000";
 					end case;
-						end if;
+				else
+					case rgb_color is
+						when 0 => ws2812_rgb_byte <= "00000000";
+						when 1 => ws2812_rgb_byte <= "00011111";
+						when 2 => ws2812_rgb_byte <= "00000000";
+						when others => ws2812_rgb_byte <= "00000000";
+					end case;
+				end if;
 				end if;
 			end if;
 	end process;

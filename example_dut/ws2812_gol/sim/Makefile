@@ -1,11 +1,10 @@
 # vhdl files
 TESTBENCH=ws2812_gol_tb
-FILES = ../src/*vhd
+FILES = ../src/*.vhd
 VHDLEX = .vhd
 
 # testbench
 TESTBENCHFILE = ./${TESTBENCH}$(VHDLEX)
-SPI_MASTER = ./spi_master.vhd
 
 
 #GHDL CONFIG
@@ -13,7 +12,7 @@ GHDL_CMD = ghdl
 GHDL_FLAGS  = 
 
 SIMDIR = simulation
-STOP_TIME = 70ms
+STOP_TIME = 10ms
 GHDL_SIM_OPT = --stop-time=$(STOP_TIME) --stop-delta=100000
 
 WAVEFORM_VIEWER = gtkwave
@@ -24,7 +23,7 @@ all: clean compile run view
 
 compile:
 	@mkdir -p $(SIMDIR)
-	@$(GHDL_CMD) -i $(GHDL_FLAGS) --workdir=$(SIMDIR) --work=work $(TESTBENCHFILE) $(SPI_MASTER) $(FILES)
+	@$(GHDL_CMD) -i $(GHDL_FLAGS) --workdir=$(SIMDIR) --work=work $(TESTBENCHFILE) $(FILES)
 	@$(GHDL_CMD) -m $(GHDL_FLAGS) --workdir=$(SIMDIR) --work=work $(TESTBENCH)
 
 

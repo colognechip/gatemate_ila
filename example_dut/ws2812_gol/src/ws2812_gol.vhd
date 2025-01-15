@@ -5,13 +5,14 @@ use ieee.numeric_std.all;
 entity ws2812_gol is
 	generic(
         sim : boolean := False;
-		gol_64_len_cnt : natural := 1;
-		gol_64_wd_cnt : natural := 1
+		gol_64_len_cnt : natural := 1; -- 3
+		gol_64_wd_cnt : natural := 1 -- 5
     );
 port (
 	led					: out std_ulogic_vector(7 downto 0);
 	clk : in std_ulogic;  
-	reset : in std_ulogic; 
+	reset : in std_ulogic;
+	reset_2 : in std_ulogic; 
 	ws2812_out : out std_ulogic_vector(((gol_64_len_cnt*gol_64_wd_cnt)-1) downto 0);
 	stswi : in  std_ulogic_vector(15 downto 0);
 	stled : out  std_ulogic_vector(15 downto 0);
@@ -24,8 +25,10 @@ port (
 	);
 end entity;
 
+
+
 architecture beh of ws2812_gol is
-signal ma_choise :	integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)+1);
+signal ma_choise :	integer range 0 to ((gol_64_len_cnt*gol_64_wd_cnt)-1);
 
 TYPE STATE_NextGen_Type IS (IDLE, Data_to_WS2812, wait_for_finish); 
 SIGNAL state_nextGen   : STATE_NextGen_Type := IDLE;
@@ -36,9 +39,9 @@ signal wnr_led, ws2812_out_single, write_en_s : std_ulogic;
 
 signal start_ram_to_bit : std_ulogic;
 
-signal next_gen_cnt_v : std_ulogic_vector(23 downto 0);
+signal next_gen_cnt_v : std_ulogic_vector(11 downto 0);
 
-
+signal reset_in : std_ulogic;
 
 signal ws2812_ready_s : std_ulogic;
 
@@ -52,7 +55,12 @@ end component;
 
 signal CC_reset, reset_all, clk0 : std_ulogic;
 begin
+	sthex3 <= "10000001";
+	sthex4 <= "10000001";
+	sthex5 <= "10000001";
 
+
+	reset_in <= reset and reset_2;
 	stled <= stswi;
 
 	rst_deouncer : entity work.debouncer
@@ -60,7 +68,7 @@ begin
 		sync_len => 8
 	)
 	port map(
-		btn => reset,
+		btn => reset_in,
 		clk => clk0,
 		reset => CC_reset,
 		btn_state_stable => reset_stable
@@ -83,7 +91,7 @@ begin
     end generate;
 
 
-	reset_all <= CC_reset AND reset_stable;
+	reset_all <= CC_reset AND reset_stable ;
 	clk0 <= clk;
 	ram_to_bit : entity work.ram_to_bit
 	port map(
@@ -130,25 +138,6 @@ to_seven_0 : entity work.hexdigit
 			p_n => '0'
 		);
 
-		to_seven_3 : entity work.hexdigit
-		port map(
-			value_in => next_gen_cnt_v(15 downto 12),
-			value_out => sthex3,
-			p_n => '0'
-		);
-		to_seven_4 : entity work.hexdigit
-		port map(
-			value_in => next_gen_cnt_v(19 downto 16),
-			value_out => sthex4,
-			p_n => '0'
-		);
-		to_seven_5 : entity work.hexdigit
-		port map(
-			value_in => next_gen_cnt_v(23 downto 20),
-			value_out => sthex5,
-			p_n => '0'
-		);
-
 
 Golx64 : entity work.gol_control
 	generic map(
@@ -171,7 +160,19 @@ Golx64 : entity work.gol_control
 
 		gol_ws2812_i: for i in 0 to (gol_64_len_cnt-1) generate
 			gol_ws2812_j: for j in 0 to (gol_64_wd_cnt-1) generate
-				ws2812_out((i*gol_64_wd_cnt)+j) <= ws2812_out_single when (ma_choise = ((i*gol_64_wd_cnt)+j)) else '0';
+				gol_ws2812 : process (clk0) is
+				begin
+				if rising_edge(clk0) then      
+				  if reset_all = '0' then               
+					ws2812_out((i*gol_64_wd_cnt)+j) <= '0';
+				  elsif(ma_choise = ((i*gol_64_wd_cnt)+j)) then
+					ws2812_out((i*gol_64_wd_cnt)+j) <= ws2812_out_single;
+				  else
+					ws2812_out((i*gol_64_wd_cnt)+j) <= '0';
+				  end if;
+				end if;
+				end process;
+
 			end generate gol_ws2812_j;
 		end generate gol_ws2812_i;
 
