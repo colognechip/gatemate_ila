@@ -762,7 +762,7 @@ class ILAConfig:
                 value = (i + 1) * 32768
                 max_BRAM_count.append([value, 1, 1, (i + 1), 32768])
         elif self.total_size == 2:
-            for i in range(min(available_40k_BRAMs)):
+            for i in range(min(available_40k_BRAMs, min_BRAMs_deph)):
                 value = (i + 1) * 16384
                 max_BRAM_count.append([value, 2, 1, (i + 1), 16384])
         else:
