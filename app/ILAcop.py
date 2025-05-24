@@ -7,12 +7,44 @@ from config import print_note
 
 __version__ = '1.1.1'
 actions = ['config', 'reconfig', 'start']
-ArgEpilog ='''
-example usage:
-python3 ILAcop.py [Commands]
+
+lizenz = f'''
+#################################################################################################
+#                   Cologne Chip GateMate ILA control program (ILAcop)                          #
+# ********************************************************************************************* #
+#    Copyright (C) 2023 Cologne Chip AG <support@colognechip.com>                               #
+#    Developed by Dave Fohrn                                                                    #
+#                                                                                               #
+#    This program is free software: you can redistribute it and/or modify                       #
+#    it under the terms of the GNU General Public License as published by                       #
+#    the Free Software Foundation, either version 3 of the License, or                          #
+#    (at your option) any later version.                                                        #
+#                                                                                               #
+#    This program is distributed in the hope that it will be useful,                            #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of                             #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                              #
+#    GNU General Public License for more details.                                               #
+#                                                                                               #
+#    You should have received a copy of the GNU General Public License                          #
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.                     #
+#                                                                                               #
+# ********************************************************************************************* #
+#################################################################################################
+
+ILA version: {__version__}
+'''
+
+custom_usage = 'python3 ILAcop.py [Commands]'
+
+ArgProlog =f'''
+
+ILA version: {__version__}
+
+GateMate ILA control program. 
+With this script, you can configure and execute the ILA with a design under test (DUT).
 
 Commands:
-  config:   Configure the ILA.
+  config    Configure the ILA.
              -vlog SOURCE    Paths to the Verilog source code files.
              -vhd SOURCE     Paths to the VHDL source code files.
              -t NAME         Top level entity of the design under test.
@@ -26,24 +58,24 @@ Commands:
                 -create_json: Creates a JSON file in which the logic analyzer can be configured.
             NOTE: Without the subcommand the configurations are requested step by step via the terminal.
   
-  reconfig: Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
+  reconfig  Configures the ILA based on a JSON file. With this option you have to specify a JSON file with -l [filename].json.
   
-  start     Starts the communication to the ILA with the last uploaded config
-    -s  The -s parameter prevents the FPGA from being reconfigured on restart.
+  start      Starts the communication to the ILA with the last uploaded config
+              -s  The -s parameter prevents the FPGA from being reconfigured on restart.
 
 '''
-p = argparse.ArgumentParser(prog='ILAcop.py', description='GateMate ILA control program. With this script, '
-                            'you can configure and execute the ILA with a design under test (DUT).',
-                            epilog=ArgEpilog, formatter_class=RawTextHelpFormatter)
+p = argparse.ArgumentParser(prog='ILAcop.py', 
+                            usage=custom_usage,
+                            description=ArgProlog,
+                            formatter_class=RawTextHelpFormatter)
 p.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 p.add_argument('--clean', dest='clean', action='store_true', help='Deletes all output files created by the program.')
 p.add_argument('--showdev', dest='showdev', action='store_true', help='Outputs all found FTDI ports.')
+p.add_argument('-wd', dest='work_dir', type=str, required=False,
+                                   help='Folder from which Yosys should be started for the synthesis of the Design Under Test.')
 
 Modes_delay = [0,1,2,3]
 
-
-p.add_argument('-wd', dest='work_dir', type=str, required=False,
-                                   help='Folder from which Yosys should be started for the synthesis of the Design Under Test.')
 
 main_actions = p.add_subparsers(title="main_actions", dest='main_action')
 
@@ -68,6 +100,7 @@ main_actions_config_parser.add_argument('-f', dest="fsource", type=str, default=
 
 main_actions_config_parser.add_argument('-d', dest='delay', type=int, metavar=Modes_delay, default=Modes_delay[2], required=False,
             help='Set the phase shift of the sampling frequency. 0 = 0°, 1 = 90°, 2 = 180° and 3 = 270° (default: 2).')
+
 
 
 def positive_int(value):
@@ -96,29 +129,7 @@ main_actions_reconfig_parser_reconfig.add_argument('-l', dest='load', type=str, 
                help='JSON file containing the configurations of the ILA')
 args = p.parse_args()
 
-lizenz = '''
-#################################################################################################
-#                   Cologne Chip GateMate ILA control program (ILAcop)                          #
-# ********************************************************************************************* #
-#    Copyright (C) 2023 Cologne Chip AG <support@colognechip.com>                               #
-#    Developed by Dave Fohrn                                                                    #
-#                                                                                               #
-#    This program is free software: you can redistribute it and/or modify                       #
-#    it under the terms of the GNU General Public License as published by                       #
-#    the Free Software Foundation, either version 3 of the License, or                          #
-#    (at your option) any later version.                                                        #
-#                                                                                               #
-#    This program is distributed in the hope that it will be useful,                            #
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of                             #
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                              #
-#    GNU General Public License for more details.                                               #
-#                                                                                               #
-#    You should have received a copy of the GNU General Public License                          #
-#    along with this program.  If not, see <https://www.gnu.org/licenses/>.                     #
-#                                                                                               #
-# ********************************************************************************************* #
-#################################################################################################
-'''
+
 
 print(lizenz)
 
@@ -150,7 +161,7 @@ if args.clean:
     exit()
 
 if args.main_action == actions[0]: # config
-    ILA_config_instance = ILAConfig()
+    ILA_config_instance = ILAConfig(__version__)
     ILA_config_instance.set_DUT_top(args.top)
     ILA_config_instance.set_external_clk_freq(args.fsource)
     ILA_config_instance.set_ILA_clk_delay(args.delay)
@@ -217,7 +228,7 @@ elif args.main_action == actions[1]: # reconfig
     elif not os.path.exists(file_name):
         print("ERROR! No correct file was passed!")
         exit()
-    ILA_config_instance, config_check = load_from_json(file_name)
+    ILA_config_instance, config_check = load_from_json(file_name, __version__)
     if not config_check:
         exit()
     if not ILA_config_instance.flat_DUT(args.work_dir):

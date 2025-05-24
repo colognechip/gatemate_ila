@@ -153,11 +153,13 @@ def get_size_vec(ranges):
         return 1
 
 
-def load_from_json(file_name):
+def load_from_json(file_name, __version__):
     with open(file_name, 'r') as f:
         data = json.load(f)
-    ila_config = ILAConfig()
+    ila_config = ILAConfig(__version__)
     ila_config.__dict__.update(data)
+    if __version__ != ila_config.ILA_version:
+        print(f'Warning: The loaded file was created with a different version of the ILA than the one currently in use to load the configuration. This may lead to compatibility issues.\nFile version: {ila_config.ILA_version}')
     now = datetime.datetime.now()
     ila_config.time_stamp = now.strftime("%y-%m-%d_%H-%M-%S")
     ila_config.found_cc_rst = False
@@ -171,6 +173,7 @@ def load_from_json(file_name):
 
 
 class ILAConfig:
+    ILA_version = ""
     SUT_top_name = ""
     explanation_SUT_top_name = ""
     SUT_ccf_file_source = ""
@@ -198,7 +201,8 @@ class ILAConfig:
     explanation_DUT_BRAMS = ""
     total_size = 0
 
-    def __init__(self):
+    def __init__(self, __version__):
+        self.ILA_version = __version__
         self.FIFO_SMP_CNT_before = None
         self.explanation_speed = "Configure ILA for best performance. Max Sample Width = 40, the number of samples depends on the sample width."
         self.speed = False
