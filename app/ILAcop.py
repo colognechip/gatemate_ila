@@ -5,7 +5,7 @@ from ILAConfig import ILAConfig, load_from_json
 from pyftdi.ftdi import Ftdi
 from config import print_note
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 actions = ['config', 'reconfig', 'start']
 ArgEpilog ='''
 example usage:
