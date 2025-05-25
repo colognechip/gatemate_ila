@@ -664,7 +664,8 @@ class ILAConfig:
 
     def search_DUT_signal(self, line):
         match = re.search(r"\(\* ILA = 32'd1 \*\)", line)
-        if match:
+        match2 = re.search(r"\(\* ila = 1'h1 \*\)", line)
+        if match or match2:
             self.analyse_signal = True              
         match_signal = re.search(r'^\s*((?:reg|wire))\s+(\[\d+:\d+\])?\s*(.+)\s*;', line)
         if match_signal:
