@@ -673,7 +673,7 @@ class ILAConfig:
                 self.SUT_signals.append(self.string_to_dic(match_signal))
         return 
 
-    def print_inputs_DUT(self):
+    def print_inputs_DUT(self, no_vectors = False):
         word = ' Inputs DUT "' + self.SUT_top_name + '" '
         table = PrettyTable()
         names = []
@@ -681,11 +681,11 @@ class ILAConfig:
         select_count = 0
         for port_DUT in self.ports_DUT:
             if "input" == port_DUT["Signal_type"]:
-                if port_DUT["Signal_range"] is not None:
-                    table.add_row([select_count, port_DUT["Signal_type"], port_DUT["Signal_range"],
-                                   port_DUT["Signal_name"]])
-                else:
+                if port_DUT["Signal_range"] is None:
                     table.add_row([select_count, port_DUT["Signal_type"], 1,
+                                   port_DUT["Signal_name"]])
+                elif no_vectors == False:
+                    table.add_row([select_count, port_DUT["Signal_type"], port_DUT["Signal_range"],
                                    port_DUT["Signal_name"]])
                 select_count += 1
                 names.append(port_DUT["Signal_name"])
@@ -1106,7 +1106,7 @@ class ILAConfig:
                 self.external_clk_pin = True
                 self.clk_name = "ILA_clk_new_source"
                 return ''
-            names = self.print_inputs_DUT()
+            names = self.print_inputs_DUT(True)
             in_state, usr_in = get_port_idx(os.linesep + "Choose the clock signal: ", len(names))
             if not in_state:
                 if usr_in != 'p':
@@ -1153,7 +1153,7 @@ class ILAConfig:
                         elif response != 'y':
                             self.use_reset_fuction = True
                             return response
-                    names = self.print_inputs_DUT()
+                    names = self.print_inputs_DUT(True)
                     while True:
                         in_state, usr_in = get_port_idx(
                             os.linesep + "Choose a reset input: ",
@@ -1184,7 +1184,7 @@ class ILAConfig:
 
     def choose_analysed_signals(self):
         from config import available_BRAM
-        max_signals = ((available_BRAM*2) - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 40
+        max_signals = ((available_BRAM*2) - (self.DUT_BRAMS_20k + (self.DUT_BRAMS_40k * 2))) * 20
         if self.speed:
             max_signals = 40
 
