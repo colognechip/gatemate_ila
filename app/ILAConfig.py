@@ -262,6 +262,7 @@ class ILAConfig:
         self.FIFO_MATRIX_DEPH = None
         self.FIFO_IN_SIZE = None
         self.FIFO_MATRIX_size = None
+        self.FIFO_DEPH = None
         self.DUT_file_name_flat = None
         self.ports_DUT = []
         self.toolchain_info = ""
@@ -878,6 +879,7 @@ class ILAConfig:
                             self.FIFO_MATRIX_DEPH = all_configs[choice-1][3]
                             self.FIFO_IN_SIZE = all_configs[choice-1][1]
                             self.FIFO_MATRIX_size = all_configs[choice-1][2]
+                            self.FIFO_DEPH = all_configs[choice-1][4]
                             print(print_note(
                                 ["Sample count = " + str(self.sample_count),
                                  "Capture duration = " + str(round(self.sample_count / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
@@ -899,7 +901,7 @@ class ILAConfig:
         pipeline_offset = 3
         while True:
             input_usr = input(
-                os.linesep + "Enter the number of capture samples before trigger activation (between 0 and 250): "
+                os.linesep + f'Enter the number of capture samples before trigger activation (between 0 and {self.FIFO_DEPH-10}): '
             )
             if input_usr == 'p':
                 return False, input_usr
@@ -908,12 +910,12 @@ class ILAConfig:
             else:
                 try:
                     choice = int(input_usr)
-                    if 0 <= choice <= 250:
+                    if 0 <= choice <= (self.FIFO_DEPH-10):
                         self.FIFO_SMP_CNT_before = choice + pipeline_offset
                         print(print_note(
-                            ["Sample count = " + str(self.FIFO_SMP_CNT_before - pipeline_offset),
+                            ["Sample count = " + input_usr,
                              "Capture duration = " + str(
-                                 round(self.FIFO_SMP_CNT_before / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
+                                 round(choice / float(self.ILA_sampling_freq_MHz), 2)) + " us"],
                             " Capture duration before Trigger ", '#'))
                         return True, ""
                     else:
