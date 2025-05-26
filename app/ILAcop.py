@@ -285,7 +285,7 @@ if args.main_action != actions[2]:
             file_name = ILA_config_instance.save_to_json()
         else:
             ILA_config_instance.save_to_json(file_name)
-            print(print_note([file_name], " Configuration File ", "#"))
+        print(print_note([file_name], " Configuration File ", "#"))
 
 
 if config_FPGA:
