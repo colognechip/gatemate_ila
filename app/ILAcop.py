@@ -247,7 +247,6 @@ elif args.main_action == actions[1]: # reconfig
         exit()
     ILA_config_instance.set_config_ILA()
     # überschreiben der alten json Datei
-    ILA_config_instance.save_to_json(file_name)
 
 
 
@@ -257,10 +256,14 @@ elif args.main_action == actions[2]: # start
         content = file.read()
         if len(content) > 5:
             file_name = content
+            print(print_note([file_name], " JSON file ", "#"))
             ILA_config_instance, config_check = load_from_json(file_name, __version__)
-            print(print_note(["JSON file: ", file_name], " JSON file ", "#"))
+            if ILA_config_instance.toolchain_info  == "":
+                print(print_note(["No binaries have been generated yet to configure the FPGA for the selected JSON file.", "Please run './ILAcop.py reconfig' first."], " ERROR ", "#"))  
+                exit()  
         else:
-            print("No configuration file was found for the ILA!")
+            print(print_note(["No JSON configuration file for the ILA was found!", file_name], " ERROR ", "#"))
+            exit()
     if args.swc:
         config_FPGA = False
 
@@ -280,6 +283,8 @@ if args.main_action != actions[2]:
     else:
         if args.main_action == actions[0]:
             file_name = ILA_config_instance.save_to_json()
+        else:
+            ILA_config_instance.save_to_json(file_name)
             print(print_note([file_name], " Configuration File ", "#"))
 
 
