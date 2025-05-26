@@ -246,6 +246,10 @@ elif args.main_action == actions[1]: # reconfig
     if usr_in in ['e', 'p']:
         exit()
     ILA_config_instance.set_config_ILA()
+    # überschreiben der alten json Datei
+    ILA_config_instance.save_to_json(file_name)
+
+
 
 
 elif args.main_action == actions[2]: # start
@@ -253,7 +257,8 @@ elif args.main_action == actions[2]: # start
         content = file.read()
         if len(content) > 5:
             file_name = content
-            ILA_config_instance, config_check = load_from_json(file_name)
+            ILA_config_instance, config_check = load_from_json(file_name, __version__)
+            print(print_note(["JSON file: ", file_name], " JSON file ", "#"))
         else:
             print("No configuration file was found for the ILA!")
     if args.swc:
@@ -268,8 +273,6 @@ if args.main_action != actions[2]:
         if args.main_action != actions[1]:
             file_name = ILA_config_instance.save_to_json()
             print(print_note(["An error has occurred.", "All configurations for the given DUT have been saved in the following JSON file: ", file_name], " Error ", "#"))
-            with open("last_upload.txt", 'w') as file:
-                file.write(file_name)
         else:
             print(print_note(["An error has occurred."], " Error ", "#"))
 
@@ -278,10 +281,6 @@ if args.main_action != actions[2]:
         if args.main_action == actions[0]:
             file_name = ILA_config_instance.save_to_json()
             print(print_note([file_name], " Configuration File ", "#"))
-        else:
-            ILA_config_instance.save_to_json(file_name)
-        with open("last_upload.txt", 'w') as file:
-            file.write(file_name)
 
 
 if config_FPGA:

@@ -284,6 +284,8 @@ class ILAConfig:
             file_name = 'save_config'+ os.path.sep +'ila_config_' + self.SUT_top_name + "_" + self.time_stamp + '.json'
         with open(file_name, 'w') as f:
             json.dump(self.__dict__, f, indent=4)
+        with open("last_upload.txt", 'w') as file:
+                file.write(file_name)
         return file_name
 
     def set_external_clk_freq(self, ex_freq):
