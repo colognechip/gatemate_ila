@@ -22,17 +22,23 @@
 # ********************************************************************************************* #
 #################################################################################################
 
-YOSYS = 'yosys'
+USE_NEXTPNR = False
+YOSYS = 'yosys '
 YOSYS_FLAGS = '-nomx8'
+YOSYS_FLAGS_NEXTPNR = '-luttree -nomx8'
+YOSYS_OPTIONAL_WRITE_NEXTPNR = 'write_verilog /home/robo/Schreibtisch/CologneChip/gatemate_ila/net/ILA_ERROR.v;' # write_verilog <netlist>.v   # optional:write verilog netlist
 PR = 'p_r'
 PR_FLAGS = '-cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
+GMPACK = 'gmpack'
+NEXTPNR = 'nextpnr-himbaechel'
+NEXTPNR_FLAGS = '--device=CCGM1A1 '
 UPLOAD = 'openFPGALoader'
 UPLOAD_FLAGS = ' -b gatemate_evb_jtag ' # gatemate_evb_jtag,  olimex_gatemateevb, -c gatemate_pgm
 REPRESENTATION_SOFTWARE = ['gtkwave']
 REPRESENTATION_FLAGS = ['--save', 'save.gtkw']
 CON_DEVICE = 'evb' # GateMate Evaluation Board = 'evb', GateMate Programmer = 'pgm', Olimex = 'oli'  freely customisable mode = 'cust', without leveshifter 'free'
 CON_LINK = 'ftdi://ftdi:2232h/1' # evb = 'ftdi://ftdi:2232h/1', pgm = 'ftdi://ftdi:232h/1',
-YOSYS_GHDL_FLAG = '' # ' -m ghdl ' 
+YOSYS_GHDL_FLAG = ' -m ghdl ' 
 available_BRAM = 30  # 40k BRAMs
 freq_max = 20000000     # Maximum SPI communication frequency for interfacing with the ILA gateware.
 cust_gpio_direction_pins = 0x17F0

@@ -27,7 +27,7 @@ module CC_FIFO_40K #(
     parameter A_ECC_EN = 0,                 // Fehlerkorrektur für A
     parameter B_ECC_EN = 0                  // Fehlerkorrektur für B
   )(
-    (* clkbuf_inhibit *) input wire  A_CLK,                    // Clock für Pop
+    input wire  A_CLK,                    // Clock für Pop
     input wire B_CLK,
     input wire  A_EN,                     // Enable für Pop
     input wire  B_EN,                    // Enable für Push

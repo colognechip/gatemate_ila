@@ -268,6 +268,7 @@ class Communication:
     #
 
     def read_spi(self, trigger):
+        self.send_msg([0b00000000, 0b01100000])
         t = ThreadWithReturnValue(target=interrupt_input)
         t.start()
         print(print_note(["Waiting for device. Press Enter to interrupt."],
@@ -279,7 +280,8 @@ class Communication:
                 self.send_msg(trig["pattern_msg"])
 
 
-            send_msg_m = [0b00000000, 0b01100000, 0b00000000, 0b00000000] + list(trig["trigger"]) + [trig["activation"]] + [0b00000000]
+            send_msg_m = [0b00000000, 0b00000000] + list(trig["trigger"]) + [trig["activation"]] + [0b00000000]
+            #print([f"0x{b:02X}" for b in send_msg_m])
             self.send_msg(send_msg_m)
             start_time = time.perf_counter()
             while 1:

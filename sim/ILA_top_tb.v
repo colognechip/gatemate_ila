@@ -1,7 +1,7 @@
 `timescale 1 ns/10 ps
 
 //  Simulation der Logik:
-//  iverilog -D sim -o ILA_top_tb.vvp sim/blink.v sim/ILA_top_tb.v sim/SPI_master.v src/storage/* src/*.v 
+//  iverilog -D sim -o ILA_top_tb.vvp sim/blink.v sim/ILA_top_tb.v sim/SPI_master.v sim/CC_FIFO_40K.v src/storage/* src/*.v
 //  vvp ILA_top_tb.vvp -lxt2
 //
 // Post-Synthse:
@@ -75,7 +75,7 @@ module ila_top_tb;
   (FIFO_WIDTH <= 10) ? 4096  :  // 4K x 10 bit
   (FIFO_WIDTH <= 20) ? 2048  :  // 2K x 20 bit
   1024;                   // 1K x 40 bit
-  parameter FIFO_MATRIX_DEPH = 5;
+  parameter FIFO_MATRIX_DEPH = 3;
   parameter sampling_freq_MHz = "10.0";
   parameter samples_count = FIFO_MATRIX_DEPH*MEM_DEPTH;
   parameter sample_width = 25;
@@ -191,8 +191,8 @@ reg [3:0] st_ila = Reset_ILA;
 
 reg run_break = 0;
 integer count_break;
-reg [5:0] trigger_row =    6'b000011;
-reg [5:0] trigger_column = 6'b000011;
+reg [5:0] trigger_row =    6'b000001;
+reg [5:0] trigger_column = 6'b000001;
 
 //reg [INPUT_CTRL_size_p-1:0] input_smp = 26'b10011001101011110001010110;
 parameter byte_input = ((INPUT_CTRL_size_p-1)/8)+1;
@@ -415,10 +415,10 @@ integer idx;
     //  
     //`endif
  end
-// initial begin
-//    #100000000;
-//    $finish;
-//end
+ initial begin
+    #10000000;
+    $finish;
+end
 
 
 endmodule

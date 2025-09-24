@@ -29,7 +29,7 @@ module rec_cmd_nib#(
     parameter ADDR = 4'b0000 // Bit Pattern
 )
 (
-    input i_clk,
+    (* clkbuf_inhibit *) input i_clk,
     input i_wr_en,
     input [3:0] i_nib,
     output reg o_hold

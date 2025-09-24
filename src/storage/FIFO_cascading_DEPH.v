@@ -4,7 +4,7 @@ module FIFO_cascading_DEPH #(
     parameter DEPH = 3,
     parameter [14:0] ALMOST_EMPTY_OFFSET = 15'hf
 )(
-    (* clkbuf_inhibit *) input wire rclk,
+    input wire rclk,
     input wire wclk,
     input wire rst,
     input wire PUSH_i,

@@ -59,6 +59,7 @@ always @(posedge i_clk_ILA) begin
         end
         else begin
             shift_reg <= {4'b0000, shift_reg[((packages_per_sample*4)-1):4]};
+            o_rd <= 0;
         end
     end
     else begin

@@ -12,10 +12,12 @@ Pin_in   "i_ss_ILA"  	  Loc = "IO_WA_B4";
 
 #################################################################################################
 # *******************************SUT Signals*************************************************** #
-# // __Place~for~Signals~SUT__
+# // __Place~for~Signals~SUT__
 
 Pin_in "clk"           Loc = "IO_SB_A8" | SCHMITT_TRIGGER=true;    # Clock0
 Pin_in   "reset"   Loc = "IO_EB_B0"; 
+Pin_in   "reset_2"   Loc = "IO_NB_B7"; 
+
 
 Pin_out  "led[0]"                   Loc = "IO_EB_B1";                           # LED D1
 Pin_out  "led[1]"                   Loc = "IO_EB_B2";                           # LED D2
@@ -28,7 +30,120 @@ Pin_out  "led[7]"                   Loc = "IO_EB_B8";                           
 
 Pin_out   "ws2812_out" Loc = "IO_NB_A0";
 
-Pin_in   "i_sclk"       Loc = "IO_WA_B8" | SCHMITT_TRIGGER=true;   
-Pin_in   "i_mosi"  	    Loc = "IO_WA_B7";
-Pin_out  "o_miso"       Loc = "IO_WA_A7";
-Pin_in   "i_ss"  	    Loc = "IO_WA_A8";
+#Pin_out   "ws2812_out[0]" Loc = "IO_NB_A0" ;
+#Pin_out   "ws2812_out[1]" Loc = "IO_NB_A1" ;
+#Pin_out   "ws2812_out[2]" Loc = "IO_NB_A2" ; # 5
+#Pin_out   "ws2812_out[3]" Loc = "IO_NB_A3";
+#Pin_out   "ws2812_out[4]" Loc = "IO_NB_B0";
+#Pin_out   "ws2812_out[5]" Loc = "IO_NB_A5";
+#Pin_out   "ws2812_out[6]" Loc = "IO_NB_A4";
+#Pin_out   "ws2812_out[7]" Loc = "IO_NB_B3";
+#Pin_out   "ws2812_out[8]" Loc = "IO_NB_B2";
+#Pin_out   "ws2812_out[9]" Loc = "IO_NB_B1";
+#Pin_out   "ws2812_out[10]" Loc = "IO_NB_A6";
+#Pin_out   "ws2812_out[11]" Loc = "IO_NB_A7";
+#Pin_out   "ws2812_out[12]" Loc = "IO_NB_B4";
+#Pin_out   "ws2812_out[13]" Loc = "IO_NB_B5";
+#Pin_out   "ws2812_out[14]" Loc = "IO_NB_B6";
+
+Pin_in  "stswi[0]"  Loc = "IO_SB_B0"| PULLDOWN=true;
+Pin_in  "stswi[1]"  Loc = "IO_SB_B1"| PULLDOWN=true;
+Pin_in  "stswi[2]"  Loc = "IO_SB_B2"| PULLDOWN=true;
+Pin_in  "stswi[3]"  Loc = "IO_SB_B3"| PULLDOWN=true;
+Pin_in  "stswi[4]"  Loc = "IO_SB_B4"| PULLDOWN=true;
+Pin_in  "stswi[5]"  Loc = "IO_SB_B5"| PULLDOWN=true;
+Pin_in  "stswi[6]"  Loc = "IO_SB_B6"| PULLDOWN=true;
+Pin_in  "stswi[7]"  Loc = "IO_SB_B7"| PULLDOWN=true;
+Pin_in  "stswi[8]"  Loc = "IO_SB_B8"| PULLDOWN=true;
+Pin_in  "stswi[9]"  Loc = "IO_SB_A7"| PULLDOWN=true;
+Pin_in  "stswi[10]" Loc = "IO_SB_A6"| PULLDOWN=true;
+Pin_in  "stswi[11]" Loc = "IO_SB_A5"| PULLDOWN=true;
+Pin_in  "stswi[12]" Loc = "IO_SB_A4"| PULLDOWN=true;
+Pin_in  "stswi[13]" Loc = "IO_SB_A3"| PULLDOWN=true;
+Pin_in  "stswi[14]" Loc = "IO_SB_A2"| PULLDOWN=true;
+Pin_in  "stswi[15]" Loc = "IO_SB_A1"| PULLDOWN=true;
+
+Pin_out "stled[0]"  Loc = "IO_SB_A0";
+Pin_out "stled[1]"  Loc = "IO_SA_B0";
+Pin_out "stled[2]"  Loc = "IO_SA_B1";
+Pin_out "stled[3]"  Loc = "IO_SA_B2";
+Pin_out "stled[4]"  Loc = "IO_SA_B3";
+Pin_out "stled[5]"  Loc = "IO_SA_B4";
+Pin_out "stled[6]"  Loc = "IO_SA_B5";
+Pin_out "stled[7]"  Loc = "IO_SA_B6";
+Pin_out "stled[8]"  Loc = "IO_SA_B7";
+Pin_out "stled[9]"  Loc = "IO_SA_B8";
+Pin_out "stled[10]" Loc = "IO_SA_A8";
+Pin_out "stled[11]" Loc = "IO_SA_A7";
+Pin_out "stled[12]" Loc = "IO_SA_A6";
+Pin_out "stled[13]" Loc = "IO_SA_A5";
+Pin_out "stled[14]" Loc = "IO_SA_A4";
+Pin_out "stled[15]" Loc = "IO_SA_A3";
+
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX0
+## #######################################################
+Pin_out "sthex0[0]" Loc = "IO_EA_A1"; # hex0 D
+Pin_out "sthex0[1]" Loc = "IO_EA_A2"; # hex0 A 
+Pin_out "sthex0[2]" Loc = "IO_EA_A3"; # hex0 B
+Pin_out "sthex0[3]" Loc = "IO_EA_A4"; # hex0 C
+Pin_out "sthex0[4]" Loc = "IO_EA_A5"; # hex0 D
+Pin_out "sthex0[5]" Loc = "IO_EA_A6"; # hex0 E
+Pin_out "sthex0[6]" Loc = "IO_EA_A7"; # hex0 F
+Pin_out "sthex0[7]" Loc = "IO_EA_A8"; # hex0 G
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX1
+## #######################################################
+Pin_out "sthex1[0]" Loc = "IO_EA_B8"; # hex1 DP
+Pin_out "sthex1[1]" Loc = "IO_EA_B7"; # hex1 A
+Pin_out "sthex1[2]" Loc = "IO_EA_B6"; # hex1 B
+Pin_out "sthex1[3]" Loc = "IO_EA_B5"; # hex1 C
+Pin_out "sthex1[4]" Loc = "IO_EA_B4"; # hex1 D
+Pin_out "sthex1[5]" Loc = "IO_EA_B3"; # hex1 E
+Pin_out "sthex1[6]" Loc = "IO_EA_B2"; # hex1 F
+Pin_out "sthex1[7]" Loc = "IO_EA_B1"; # hex1 G
+
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX2
+## #######################################################
+Pin_out "sthex2[0]" Loc = "IO_NA_B1"; # hex2 DP
+Pin_out "sthex2[1]" Loc = "IO_NA_B2"; # hex2 A
+Pin_out "sthex2[2]" Loc = "IO_NA_B3"; # hex2 B
+Pin_out "sthex2[3]" Loc = "IO_NA_B4"; # hex2 C
+Pin_out "sthex2[4]" Loc = "IO_NA_B5"; # hex2 D
+Pin_out "sthex2[5]" Loc = "IO_NA_B6"; # hex2 E
+Pin_out "sthex2[6]" Loc = "IO_NA_B7"; # hex2 F
+Pin_out "sthex2[7]" Loc = "IO_NA_B8"; # hex2 G
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX3
+## #######################################################
+Pin_out "sthex3[0]" Loc = "IO_NA_A8"; # hex3 DP
+Pin_out "sthex3[1]" Loc = "IO_NA_A7"; # hex3 A
+Pin_out "sthex3[2]" Loc = "IO_NA_A6"; # hex3 B
+Pin_out "sthex3[3]" Loc = "IO_NA_A5"; # hex3 C
+Pin_out "sthex3[4]" Loc = "IO_NA_A4"; # hex3 D
+Pin_out "sthex3[5]" Loc = "IO_NA_A3"; # hex3 E
+Pin_out "sthex3[6]" Loc = "IO_NA_A2"; # hex3 F
+Pin_out "sthex3[7]" Loc = "IO_NA_A1"; # hex3 G
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX4
+## #######################################################
+Pin_out "sthex4[0]" Loc = "IO_WC_B1"; # hex4 DP
+Pin_out "sthex4[1]" Loc = "IO_WC_B2"; # hex4 A
+Pin_out "sthex4[2]" Loc = "IO_WC_B3"; # hex4 B
+Pin_out "sthex4[3]" Loc = "IO_WC_B4"; # hex4 C
+Pin_out "sthex4[4]" Loc = "IO_WC_B5"; # hex4 D
+Pin_out "sthex4[5]" Loc = "IO_WC_B6"; # hex4 E
+Pin_out "sthex4[6]" Loc = "IO_WC_B7"; # hex4 F
+Pin_out "sthex4[7]" Loc = "IO_WC_B8"; # hex4 G
+## #######################################################
+## gm-study-max board constraints 6x 7-Segment Digits HEX5
+## #######################################################
+Pin_out "sthex5[0]" Loc = "IO_WC_A8"; # hex5 DP
+Pin_out "sthex5[1]" Loc = "IO_WC_A7"; # hex5 A
+Pin_out "sthex5[2]" Loc = "IO_WC_A6"; # hex5 B
+Pin_out "sthex5[3]" Loc = "IO_WC_A5"; # hex5 C
+Pin_out "sthex5[4]" Loc = "IO_WC_A4"; # hex5 D
+Pin_out "sthex5[5]" Loc = "IO_WC_A3"; # hex5 E
+Pin_out "sthex5[6]" Loc = "IO_WC_A2"; # hex5 F
+Pin_out "sthex5[7]" Loc = "IO_WC_A1"; # hex5 G

@@ -1,17 +1,23 @@
 `timescale 1ns / 1ps
 
 module blink(
-		input wire clk,
+		input wire blink_clk,
 		input wire LED_ctrl,
 		output wire [7:0] led
 	);
-
+	/*wire clk_global;
+	CC_BUFG bufg_inst (
+                .I(clk), // Input from CPE array or input buffer
+                .O(clk_global) // Output to global routing resource
+            );
+*/
 	wire rst;
 	CC_USR_RSTN usr_rstn_inst (
    	.USR_RSTN(rst) // reset signal to CPE array
 );
 
 reg [24:0] counter;
+/*
  wire clk270, clk180, clk90, clk0, usr_ref_out;
  wire usr_pll_lock_stdy, usr_pll_lock;
 
@@ -27,11 +33,11 @@ reg [24:0] counter;
 		.USR_LOCKED_STDY_RST(1'b0), .USR_PLL_LOCKED_STDY(usr_pll_lock_stdy), .USR_PLL_LOCKED(usr_pll_lock),
 		.CLK270(clk270), .CLK180(clk180), .CLK90(clk90), .CLK0(clk0), .CLK_REF_OUT(usr_ref_out)
 	);
-
+*/
 	assign led[6:0] = counter[24:18];
 	assign led[7] = LED_ctrl;
 
-	always @(posedge clk0)
+	always @(posedge blink_clk)
 	begin
 		if (!rst) begin
 			counter <= 0; //-1000; // 27'b010011111111111100000000000;

@@ -53,8 +53,9 @@ reg [(sample_width-1):0] o_sample;
 wire rd_nxt, FIFO_FULL, FIFO_ALMOST_EMPTY, FIFO_EMPTY;
 reg FIFO_POP;
 reg write_done;
-(* clkbuf_inhibit *) wire FIFO_clk;
-assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
+// (* clkbuf_inhibit *) wire FIFO_clk;
+
+//assign FIFO_clk = write_done ? i_sclk : i_clk_ILA;
 
 always  @(posedge i_sclk) begin
     if (!i_reset_sclk) begin 
@@ -103,7 +104,7 @@ FIFO_cascading_WIDTH #(
     .DEPH(FIFO_MATRIX_DEPH),
     .ALMOST_EMPTY_OFFSET(ALMOST_EMPTY_OFFSET)
 ) FIFO_cas (
-    .rclk(FIFO_clk),
+    .rclk(i_clk_ILA),
     .wclk(i_clk_ILA),
     .rst(i_reset_clk),
     .PUSH_i(FIFO_PUSH),
@@ -193,10 +194,37 @@ reg POP_active;
 //    end
 //end
 
+wire rd_next_edge;
 
-assign FIFO_POP = write_done ? rd_nxt : (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
+//edge_detection trigger_edge (.i_clk(i_clk_ILA), .i_reset(i_reset_clk), .i_signal(rd_nxt), .o_post_edge(rd_next_edge));
+
+reg signal_old, post_edge;
+
+always @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin
+        signal_old <= rd_nxt;
+        post_edge <= 0;
+    end else begin
+        signal_old <= rd_nxt;
+        post_edge <= rd_nxt & (~signal_old);
+    end
+end
+
+always @(posedge i_clk_ILA) begin
+    if (!i_reset_clk) begin
+        FIFO_POP <= 0;
+    end else begin
+        if (write_done) begin
+            FIFO_POP <= post_edge;
+        end else begin
+            FIFO_POP <= (i_trigger_triggered ? 0 : !FIFO_ALMOST_EMPTY);
+        end
+    end
+end
 
 assign o_write_done = write_done;
+
+
 
 
 

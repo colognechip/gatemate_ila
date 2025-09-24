@@ -464,17 +464,18 @@ class RuntimeInteractionManager:
             notes.append("")
             notes.append(" Sequences Number: " + str(count+1))
             notes.append("    trigger activation: " + self.trigger_activations[(trig_set["trigger_act"] & 0x0F)])
-            if trig_set["trigger_act"] == 2:
-                print_pattern = "|"
-                for pattern_bit in range(len(self.all_signal_names)):
-                    if trig_set["trigger_clear"][1][pattern_bit] == '1':
-                        print_pattern = "|DC" + print_pattern
-                    else:
-                        print_pattern = "| " + str(trig_set["trigger_clear"][0][pattern_bit]) + print_pattern
-                print_pattern = "    trigger patter: " + print_pattern
-                notes.append(print_pattern)
-            else:
+            if trig_set["trigger_act"] != 2:
                 notes.append("    trigger signal:     " + str(self.all_signal_names[trig_set["trigger_clear"]]))
+                #print_pattern = "|"
+                #for pattern_bit in range(len(self.all_signal_names)):
+                #    if trig_set["trigger_clear"][1][pattern_bit] == '1':
+                #        print_pattern = "|DC" + print_pattern
+                #    else:
+                #        print_pattern = "| " + str(trig_set["trigger_clear"][0][pattern_bit]) + print_pattern
+                #print_pattern = "    trigger patter: " + print_pattern
+                #notes.append(print_pattern)
+            #else:
+                #notes.append("    trigger signal:     " + str(self.all_signal_names[trig_set["trigger_clear"]]))
 
 
         print(print_note(notes,

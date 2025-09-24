@@ -25,14 +25,14 @@
 
 module ila_top#(
     parameter USE_USR_RESET = 1, 
-    parameter USE_PLL = 0,
-    parameter USE_FEATURE_PATTERN = 0,
-    parameter INPUT_CTRL_size = 0,
-    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'h67,
+    parameter USE_PLL = 1,
+    parameter USE_FEATURE_PATTERN = 1,
+    parameter INPUT_CTRL_size = 16,
+    parameter [14:0] ALMOST_EMPTY_OFFSET = 15'h64,
     parameter FIFO_IN_WIDTH = 40,
     parameter FIFO_MATRIX_WIDTH = 3,
-    parameter FIFO_MATRIX_DEPH = 6,
-    parameter sample_width = 110,
+    parameter FIFO_MATRIX_DEPH = 5,
+    parameter sample_width = 100,
     parameter external_clk_freq = "10.0",
     parameter sampling_freq_MHz = "10.0",
     parameter clk_delay = 2,
@@ -44,15 +44,19 @@ module ila_top#(
     output o_miso_ILA,
 // #################################################################################################
 // # ********************************************************************************************* #
-// __Place~for~Signals~start__
-input clk,
-input i_mosi,
-input i_sclk,
-input i_ss,
-output [7:0] led,
-output o_miso,
-input reset,
-output ws2812_out,
+// __Place~for~Signals~start__
+(* clkbuf_inhibit *) input clk,
+input reset,
+input reset_2,
+output [7:0] led,
+output ws2812_out,
+output [15:0] stled,
+output [7:0] sthex0,
+output [7:0] sthex1,
+output [7:0] sthex2,
+output [7:0] sthex3,
+output [7:0] sthex4,
+output [7:0] sthex5,
 // __Place~for~Signals~ends__
 // #################################################################################################
     // test Signals,
@@ -69,20 +73,14 @@ wire USR_RSTN;
 reg hold_reset;
 wire reset_DUT;
 wire ILA_clk_src;
-
-// #################################################################################################
-// # ********************************************************************************************* #
-// __Place~for~SUT~start__
-assign ILA_clk_src = clk;
-ws2812_gol DUT (.ILA_rst(reset_DUT), .clk(clk), .i_mosi(i_mosi), .i_sclk(i_sclk), .i_ss(i_ss), .led(led), .o_miso(o_miso), .reset(reset), .ws2812_out(ws2812_out), .ila_sample_dut(sample));
-// __Place~for~SUT~ends__
-// #################################################################################################
-//blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
-// cc PLL instance
-wire clk270, clk180, clk90, clk0, i_clk_ILA, usr_ref_out_1;
-wire usr_pll_lock_stdy_1, usr_pll_lock_1;
+wire DUT_clk;
+wire DUT_clk_global;
 generate
     if (USE_PLL == 1) begin
+        CC_BUFG bufg_inst (
+                .I(DUT_clk), // Input from CPE array or input buffer
+                .O(DUT_clk_global) // Output to global routing resource
+            );
         CC_PLL #(
         		.REF_CLK(external_clk_freq),    // reference input in MHz
         		.OUT_CLK(sampling_freq_MHz),   // pll output frequency in MHz
@@ -116,6 +114,23 @@ generate
             assign i_clk_ILA = ILA_clk_src;
         end
 endgenerate
+
+// #################################################################################################
+// # ********************************************************************************************* #
+// __Place~for~SUT~start__
+reg [INPUT_CTRL_size-1:0] input_ctrl_DUT;
+wire [INPUT_CTRL_size-1:0] stswi_DUT_ILA_34;
+assign stswi_DUT_ILA_34 = input_ctrl_DUT;
+assign ILA_clk_src = clk;
+assign DUT_clk = clk;
+ws2812_gol DUT (.ILA_rst(reset_DUT), .clk(DUT_clk_global), .reset(reset), .reset_2(reset_2), .stswi(stswi_DUT_ILA_34), .led(led), .ws2812_out(ws2812_out), .stled(stled), .sthex0(sthex0), .sthex1(sthex1), .sthex2(sthex2), .sthex3(sthex3), .sthex4(sthex4), .sthex5(sthex5), .ila_sample_dut(sample));
+// __Place~for~SUT~ends__
+// #################################################################################################
+//blink DUT ( .clk(i_clk), .rst(rst), .led(led), .ila_sample_dut(sample));
+// cc PLL instance
+wire clk270, clk180, clk90, clk0, i_clk_ILA, usr_ref_out_1;
+wire usr_pll_lock_stdy_1, usr_pll_lock_1;
+
 
 CC_USR_RSTN usr_rstn_inst (
    .USR_RSTN(USR_RSTN) // reset signal to CPE array
