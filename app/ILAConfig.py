@@ -38,9 +38,17 @@ class ClockSource(IntEnum):
     AUX_PLL_FREE = 2         # additional PLL with free frequency
     DESIGN_PLL_DERIVED = 3   # PLL output from your design
 
-def get_files_with_extension(directory_path, extension):
-    search_pattern = directory_path + os.path.sep +'*.' + extension
-    file_list = glob.glob(search_pattern)
+def get_files_with_extension(directory_path, extension, rekursiv=False):
+    if rekursiv:
+        file_list = []
+        for root, _, files in os.walk(directory_path):
+            for file in files:
+                if file.lower().endswith('.' + extension.lower()):
+                    file_list.append(os.path.join(root, file))
+    else:
+        search_pattern = os.path.join(directory_path, f'*.{extension}')
+        file_list = glob.glob(search_pattern)
+
     absolute_paths = [os.path.abspath(file) for file in file_list]
     return absolute_paths
 
@@ -215,6 +223,7 @@ class ILAConfig:
     DUT_BRAMS_40k = 0
     explanation_DUT_BRAMS = ""
     total_size = 0
+    rekursiv = False
     state: ClockSource | None = None
 
     def __init__(self, __version__):
@@ -289,6 +298,7 @@ class ILAConfig:
         self.SUT_ccf_file_source = ""
         self.total_size = 0
         self.analyse_signal = False
+        self.rekursiv = False
         self.ILA_signals_mark = []
 
     def save_to_json(self, file_name=None):
@@ -357,7 +367,7 @@ class ILAConfig:
                             [f"The provided path '{source}' does not exist."
                              ],
                             " Warning ", '!'))
-                SUT_files_sources_folder_verilog += get_files_with_extension(source, 'v')
+                SUT_files_sources_folder_verilog += get_files_with_extension(source, 'v', self.rekursiv)
             for Namen in SUT_files_sources_folder_verilog:
                 SUT_files_sources_folder_verilog_namen.append(Namen.split(os.path.sep)[-1])
             if len(SUT_files_sources_folder_verilog_namen) == 0:
@@ -385,8 +395,8 @@ class ILAConfig:
                         [f"The provided path '{source}' does not exist."
                          ],
                         " Warning ", '!'))
-                SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhd')
-                SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhdl')
+                SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhd', self.rekursiv)
+                SUT_files_sources_folder_vhdl += get_files_with_extension(source, 'vhdl', self.rekursiv)
             for Namen in SUT_files_sources_folder_vhdl:
                 SUT_files_sources_folder_vhdl_namen.append(Namen.split(os.path.sep)[-1])
             if len(SUT_files_sources_folder_vhdl_namen) == 0:
@@ -408,7 +418,7 @@ class ILAConfig:
                  ],
                 " Warning ", '!'))
             return False
-        ccf_file_source = get_files_with_extension(ccf_source, 'ccf')
+        ccf_file_source = get_files_with_extension(ccf_source, 'ccf', self.rekursiv)
         if len(ccf_file_source) == 0:
             return False
         else:
@@ -1668,7 +1678,7 @@ class ILAConfig:
             from config import YOSYS, PR, PR_FLAGS, YOSYS_FLAGS, USE_NEXTPNR, NEXTPNR, YOSYS_FLAGS_NEXTPNR, YOSYS_OPTIONAL_WRITE_NEXTPNR, NEXTPNR_FLAGS, GMPACK
             save_dir = os.getcwd()
             save_gl_dir = os.path.dirname(save_dir)
-            files = get_files_with_extension('..'+ os.path.sep +'src', 'v') + get_files_with_extension('..'+ os.path.sep +'src'+ os.path.sep +'storage', 'v')
+            files = get_files_with_extension('..'+ os.path.sep +'src', 'v', True) #+ get_files_with_extension('..'+ os.path.sep +'src'+ os.path.sep +'storage', 'v')
             files.append(save_dir + os.path.sep +'config_design'+ os.path.sep + self.SUT_top_name + '_' + self.time_stamp + '_flat_ila.v')
             all_files = " ".join(files)
             log_file = save_gl_dir + os.path.sep +'log'+ os.path.sep +'yosys.log'

@@ -85,12 +85,14 @@ main_actions_config_parser = main_actions.add_parser(actions[0])
 main_actions_config_parser.add_argument('-create_json', dest='create_json', action='store_true', help='creates a JSON '
                                                     'file in which the logic analyzer can be configured afterwards')
 
-group = main_actions_config_parser.add_mutually_exclusive_group(required=True)
-group.add_argument('-vlog', dest='verilog_source', nargs='+', type=str, required=False,
+# group = main_actions_config_parser.add_mutually_exclusive_group(required=True)
+main_actions_config_parser.add_argument('-vlog', dest='verilog_source', nargs='+', type=str, required=False,
                                    help='paths to the folder containing the Verilog source code files')
-group.add_argument('-vhd', dest='vhdl_source', nargs='+', type=str, required=False, help='paths to the folder '
+main_actions_config_parser.add_argument('-vhd', dest='vhdl_source', nargs='+', type=str, required=False, help='paths to the folder '
                                                                                          'containing the '
                                                                                          'VHDL source code files')
+main_actions_config_parser.add_argument('-r', dest='rekursiv', action='store_true', required=False, help="Search recursively for source files in all subdirectories.")
+
 main_actions_config_parser.add_argument('-t', dest='top', type=str, required=False,
                                         help='name of the top level entity of the design to be tested')
 main_actions_config_parser.add_argument('-ccf', dest='ccf', type=str, required=False,
@@ -161,6 +163,8 @@ if args.clean:
     exit()
 
 if args.main_action == actions[0]: # config
+    if not args.verilog_source and not args.vhdl_source:
+        main_actions_config_parser.error("At least one of '-vlog' or '-vhd' must be specified.")
     ILA_config_instance = ILAConfig(__version__)
     ILA_config_instance.set_DUT_top(args.top)
     ILA_config_instance.set_external_clk_freq(args.fsource)
@@ -168,6 +172,9 @@ if args.main_action == actions[0]: # config
     ILA_config_instance.set_ILA_opt(args.opt)
     ILA_config_instance.set_sync_level(args.sync)
     ILA_config_instance.set_speed(args.speed)
+
+    if args.rekursiv:
+        ILA_config_instance.rekursiv = True
 
     # finding all Verilog files
     if args.verilog_source:

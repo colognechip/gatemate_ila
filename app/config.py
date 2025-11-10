@@ -22,11 +22,11 @@
 # ********************************************************************************************* #
 #################################################################################################
 
-USE_NEXTPNR = False
+USE_NEXTPNR = True
 YOSYS = 'yosys '
 YOSYS_FLAGS = '-nomx8'
 YOSYS_FLAGS_NEXTPNR = '-luttree -nomx8'
-YOSYS_OPTIONAL_WRITE_NEXTPNR = 'write_verilog /home/robo/Schreibtisch/CologneChip/gatemate_ila/net/ILA_ERROR.v;' # write_verilog <netlist>.v   # optional:write verilog netlist
+YOSYS_OPTIONAL_WRITE_NEXTPNR = '' # write_verilog <netlist>.v   # optional:write verilog netlist
 PR = 'p_r'
 PR_FLAGS = '-cCP +uCIO ' # The removal of the +uCIO flag is not permissible. The ccf file is automatically appended
 GMPACK = 'gmpack'
