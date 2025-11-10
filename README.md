@@ -48,9 +48,13 @@ $ > python3 ILAcop.py start
     - [Other wave viewers](#other-wave-viewers)
   - [Note for use in wsl](#note-for-use-in-wsl)
   - [Define Linux access rules for USB](#define-linux-access-rules-for-usb)
-- [Basic ILA setup](#basic-ila-setup)  
+  - [Installation of OSS CAD Suite](#oss-cad-suite)
+- [Basic ILA setup](#basic-ila-setup)
   - [Access to external software](#access-to-external-software)
   - [Setting Up Communication with External Hardware](#setting-up-communication-with-external-hardware)
+- [Open source Toolchain setup](#opensource-toolchain)
+  - [OSS CAD Suite setup](#oss-cad-suite-setup)
+  - [ILA setup for opensource Toolchain](#ila-opensource-toolchain)
 - [Hardware setup](#hardware-setup)
 - [ILA Configuration Options](#ila-configuration-options)
   - [Frequency analysis](#frequency-analysis)
@@ -103,7 +107,7 @@ the ILA.
 
 :point_up: **Please Note!** It is assumed in this document
 1. that the reader has developed an FPGA design and wants to use it on the GateMate FPGA.
-2. that the use of the GateMate FPGA, along with Yosys and Place & Route, is well-known, and the customer's design has already been loaded into the FPGA using the GateMate toolchain. Otherwise, check the dokument [Toolchain Installation User Guide.](https://www.colognechip.com/docs/ug1002-toolchain-install-latest.pdf)
+2. that the use of the GateMate FPGA, along with Yosys and Place & Route, is well-known, and the customer's design has already been loaded into the FPGA using the GateMate or the opensource toolchain. Otherwise, check the dokument [Toolchain Installation User Guide](https://www.colognechip.com/docs/ug1002-toolchain-install-latest.pdf) for Gatemate toolchain or the [instruction on Toolchain & Downloads](https://colognechip.com/programmable-logic/gatemate/toolchain/) for opensource toolchain.
 
 The ILA can be used both with the GateMate FPGA Evaluation Board and with the customer's own hardware.
 
@@ -148,7 +152,7 @@ You should now have the source files from the `gatemate_ila` in your working dir
 #### Repository structure
 
 In the following the files of the  ILA and their functions are explained:
-- **app:**  
+- **app:**
   This folder contains all the files required to run the user application ILAcop.
   -  *ILAcop.py:*  
     This file is the main script from which a user starts the ILAcop. The script handles the passed parameters and starts the processes requested by the user. More information about usage in chapter [Usage](#usage).
@@ -282,7 +286,26 @@ To ensure your Python program or the PyFTDI library has access to USB-Serial dev
   </pre>
 
 This should set the permissions for your USB-Serial device, allowing your Python program and the PyFTDI library to access it.
-  
+
+### Installation of OSS CAD Suite
+
+The precompiled version of the opensource toolchain can be downloaded from the [YosysHQ Github Repo.](https://github.com/YosysHQ/oss-cad-suite-build/releases/)
+This includes
+- **Yosys:**
+opensource Synthesis tool.
+- **nextpnr:**
+opensource FPGA Place and Route tool.
+- **openFPGALoader:**
+opensource Configuration tool.
+- **gtkwave:**
+wave viewer tool.
+- **Icarus Verilog:**
+opensource simulation tool.
+
+Example of how to extract the tgz file on Linux or WSL:
+<pre>
+$ > tar -xvzf oss-cad-suite-{version}.tgz
+</pre>
 
 ## Basic ILA setup
 
@@ -398,6 +421,21 @@ If you want to change the SPI frequency for the communication of the ILA, you ne
 freq_max = 10000000   
 </pre>
 
+## Open source Toolchain setup
+
+### OSS CAD Suite setup
+
+Activate the virtual environment in Linux or WSL:
+<pre>
+$ > source oss-cad-suite/environment
+</pre>
+
+### ILA setup for opensource Toolchain
+
+The use of `nextpnr` must be specified in the `app/config.py` file with the `USE_NEXTPNR` parameter:
+<pre>
+USE_NEXTPNR = True
+</pre>
 
 ## ILA Configuration Options
 
